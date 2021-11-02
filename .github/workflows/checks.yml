@@ -24,6 +24,8 @@ jobs:
           CGO_ENABLED: 0
         with:
           version: v1.40.0
+      - run: /github/home/golangci-lint-1.40.0-linux-amd64/golangci-lint run
+        if: failure()
       - uses: github/super-linter@v3
         env:
           DEFAULT_BRANCH: master
@@ -130,7 +132,7 @@ jobs:
           printf " 🛠️ Installing Docker from Homebrew 🛠️ \n\n"
           brew install docker docker-machine
           printf " 🛠️ Creating Docker VM 🛠️ \n\n"
-          docker-machine create --driver virtualbox --virtualbox-boot2docker-url ${{ env.ISO_PATH }} default
+          docker-machine create --driver virtualbox --virtualbox-boot2docker-url ${{ env.ISO_PATH }} --virtualbox-hostonly-cidr "192.168.56.1/24" default
           docker-machine env default
           printf " 🛠️ Adding Docker VM info to environment 🛠️ \n\n"
           eval "$(docker-machine env default)"
