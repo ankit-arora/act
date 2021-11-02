@@ -137,8 +137,8 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "matrix", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 		{"testdata", "matrix-include-exclude", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 		{"testdata", "commands", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "workdir", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "defaults-run", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
+		// {"testdata", "workdir", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, /root doesn't make sense for hostexecutor
+		// {"testdata", "defaults-run", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, /tmp doesn't make sense for hostexecutor
 		{"testdata", "uses-composite", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 		{"testdata", "issue-597", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 		{"testdata", "issue-598", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
