@@ -145,7 +145,11 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "env-and-path", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 
 		{"../model/testdata", "strategy", "push", "", platforms, ""}, // TODO: move all testdata into pkg so we can validate it with planner and runner
+		// {"testdata", "issue-228", "push", "", platforms, ""}, // TODO [igni]: Remove this once everything passes
+
 		// single test for different architecture: linux/arm64
+		{"testdata", "basic", "push", "", platforms, "linux/arm64"},
+	}
 	log.SetLevel(log.DebugLevel)
 
 	ctx := context.Background()

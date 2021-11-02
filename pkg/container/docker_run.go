@@ -488,6 +488,16 @@ func (cr *containerReference) extractPath(env *map[string]string) common.Executo
 	}
 }
 
+func (cr *containerReference) getWorkdir(workdir string) string {
+	if workdir != "" {
+		if strings.HasPrefix(workdir, "/") {
+			return workdir
+		}
+		return fmt.Sprintf("%s/%s", cr.input.WorkingDir, workdir)
+	}
+	return cr.input.WorkingDir
+}
+
 func (cr *containerReference) exec2(ctx context.Context, cmd []string, env map[string]string, user, workdir string) error {
 	logger := common.Logger(ctx)
 	// Fix slashes when running on Windows
@@ -501,16 +511,7 @@ func (cr *containerReference) exec2(ctx context.Context, cmd []string, env map[s
 
 	logger.Debugf("Exec command '%s'", cmd)
 	envList := getEnvListFromMap(env)
-	var wd string
-	if workdir != "" {
-		if strings.HasPrefix(workdir, "/") {
-			wd = workdir
-		} else {
-			wd = fmt.Sprintf("%s/%s", cr.input.WorkingDir, workdir)
-		}
-	} else {
-		wd = cr.input.WorkingDir
-	}
+	wd := cr.getWorkdir(workdir)
 	logger.Debugf("Working directory '%s'", wd)
 	idResp, err := cr.cli.ContainerExecCreate(ctx, cr.id, types.ExecConfig{
 		User:         user,
