@@ -67,7 +67,7 @@ func (rc *RunContext) Clone() *RunContext {
 func (rc *RunContext) InitStepResults(keys []string) {
 	rc.StepResults = make(map[string]*stepResult, len(keys))
 	for i := 0; i < len(keys); i++ {
-		rc.StepResults[keys[i]] = &stepResult{Success: true}
+		rc.StepResults[keys[i]] = &stepResult{Conclusion: stepStatusSuccess, Outcome: stepStatusSuccess}
 	}
 }
 
@@ -462,9 +462,9 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 			if sc.Step.ContinueOnError {
 				common.Logger(ctx).Infof("Failed but continue next step")
 				err = nil
-				(*rc.getStepsContext())[rc.CurrentStep].Success = stepStatusSuccess
+				(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusSuccess
 			} else {
-				(*rc.getStepsContext())[rc.CurrentStep].Success = stepStatusFailure
+				(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusFailure
 			}
 		}
 		return err
