@@ -336,8 +336,8 @@ func vmToJSON(vm *otto.Otto) {
 }
 
 func vmFromJSON(vm *otto.Otto) {
-	fromJSON := func(str string) map[string]interface{} {
-		var dat map[string]interface{}
+	fromJSON := func(str string) interface{} {
+		var dat interface{}
 		err := json.Unmarshal([]byte(str), &dat)
 		if err != nil {
 			log.Errorf("Unable to unmarshal: %v", err)
@@ -462,9 +462,19 @@ func (rc *RunContext) vmJob() func(*otto.Otto) {
 }
 
 func (rc *RunContext) vmSteps() func(*otto.Otto) {
-	steps := *rc.getStepsContext()
+	ctxSteps := *rc.getStepsContext()
+
+	steps := make(map[string]interface{})
+	for id, ctxStep := range ctxSteps {
+		steps[id] = map[string]interface{}{
+			"conclusion": ctxStep.Conclusion.String(),
+			"outcome":    ctxStep.Outcome.String(),
+			"outputs":    ctxStep.Outputs,
+		}
+	}
 
 	return func(vm *otto.Otto) {
+		log.Debugf("context steps => %v", steps)
 		_ = vm.Set("steps", steps)
 	}
 }

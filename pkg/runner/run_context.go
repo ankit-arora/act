@@ -18,6 +18,8 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 
+	selinux "github.com/opencontainers/selinux/go-selinux"
+
 	"github.com/nektos/act/pkg/common"
 	"github.com/nektos/act/pkg/container"
 	"github.com/nektos/act/pkg/model"
@@ -89,9 +91,44 @@ func (rc *RunContext) String() string {
 	return fmt.Sprintf("%s/%s", rc.Run.Workflow.Name, rc.Name)
 }
 
+type stepStatus int
+
+const (
+	stepStatusSuccess stepStatus = iota
+	stepStatusFailure
+)
+
+var stepStatusStrings = [...]string{
+	"success",
+	"failure",
+}
+
+func (s stepStatus) MarshalText() ([]byte, error) {
+	return []byte(s.String()), nil
+}
+
+func (s *stepStatus) UnmarshalText(b []byte) error {
+	str := string(b)
+	for i, name := range stepStatusStrings {
+		if name == str {
+			*s = stepStatus(i)
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid step status %q", str)
+}
+
+func (s stepStatus) String() string {
+	if int(s) >= len(stepStatusStrings) {
+		return ""
+	}
+	return stepStatusStrings[s]
+}
+
 type stepResult struct {
-	Success bool              `json:"success"`
-	Outputs map[string]string `json:"outputs"`
+	Outputs    map[string]string `json:"outputs"`
+	Conclusion stepStatus        `json:"conclusion"`
+	Outcome    stepStatus        `json:"outcome"`
 }
 
 // GetEnv returns the env for the context
@@ -128,6 +165,9 @@ func (rc *RunContext) GetBindsAndMounts() ([]string, map[string]string) {
 		bindModifiers := ""
 		if runtime.GOOS == "darwin" {
 			bindModifiers = ":delegated"
+		}
+		if selinux.GetEnabled() {
+			bindModifiers = ":z"
 		}
 		binds = append(binds, fmt.Sprintf("%s:%s%s", rc.Config.Workdir, rc.ContainerWorkdir(), bindModifiers))
 	} else {
@@ -212,6 +252,11 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			return true
 		})
 
+		username, password, err := rc.handleCredentials()
+		if err != nil {
+			return fmt.Errorf("failed to handle credentials: %s", err)
+		}
+
 		common.Logger(ctx).Infof("\U0001f680  Start image=%s", image)
 		name := rc.jobContainerName()
 
@@ -228,8 +273,8 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			Entrypoint:  []string{"/usr/bin/tail", "-f", "/dev/null"},
 			WorkingDir:  rc.ContainerWorkdir(),
 			Image:       image,
-			Username:    rc.Config.Secrets["DOCKER_USERNAME"],
-			Password:    rc.Config.Secrets["DOCKER_PASSWORD"],
+			Username:    username,
+			Password:    password,
 			Name:        name,
 			Env:         envList,
 			Mounts:      mounts,
@@ -314,6 +359,7 @@ func (rc *RunContext) ActionCacheDir() string {
 	return filepath.Join(xdgCache, "act")
 }
 
+// Interpolate outputs after a job is done
 func (rc *RunContext) interpolateOutputs() common.Executor {
 	return func(ctx context.Context) error {
 		ee := rc.NewExpressionEvaluator()
@@ -346,7 +392,12 @@ func (rc *RunContext) Executor() common.Executor {
 		}
 		steps = append(steps, rc.newStepExecutor(step))
 	}
-	return common.NewPipelineExecutor(steps...).Finally(rc.interpolateOutputs()).Finally(rc.stopJobContainer()).If(rc.isEnabled)
+	return common.NewPipelineExecutor(steps...).Finally(rc.interpolateOutputs()).Finally(func(ctx context.Context) error {
+		if rc.JobContainer != nil {
+			return rc.JobContainer.Close()(ctx)
+		}
+		return nil
+	}).If(rc.isEnabled)
 }
 
 // Executor returns a pipeline executor for all the steps in the job
@@ -371,8 +422,9 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 	return func(ctx context.Context) error {
 		rc.CurrentStep = sc.Step.ID
 		(*rc.getStepsContext())[rc.CurrentStep] = &stepResult{
-			Success: true,
-			Outputs: make(map[string]string),
+			Outcome:    stepStatusSuccess,
+			Conclusion: stepStatusSuccess,
+			Outputs:    make(map[string]string),
 		}
 		runStep, err := rc.EvalBool(sc.Step.If.Value)
 
@@ -383,7 +435,8 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 				return err
 			}
 			rc.ExprEval = exprEval
-			(*rc.getStepsContext())[rc.CurrentStep].Success = false
+			(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusFailure
+			(*rc.getStepsContext())[rc.CurrentStep].Outcome = stepStatusFailure
 			return err
 		}
 
@@ -405,12 +458,13 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 		} else {
 			common.Logger(ctx).Errorf("  \u274C  Failure - %s", sc.Step)
 
+			rc.StepResults[rc.CurrentStep].Outcome = stepStatusFailure
 			if sc.Step.ContinueOnError {
 				common.Logger(ctx).Infof("Failed but continue next step")
 				err = nil
-				(*rc.getStepsContext())[rc.CurrentStep].Success = true
+				(*rc.getStepsContext())[rc.CurrentStep].Success = stepStatusSuccess
 			} else {
-				(*rc.getStepsContext())[rc.CurrentStep].Success = false
+				(*rc.getStepsContext())[rc.CurrentStep].Success = stepStatusFailure
 			}
 		}
 		return err
@@ -605,7 +659,7 @@ type jobContext struct {
 func (rc *RunContext) getJobContext() *jobContext {
 	jobStatus := "success"
 	for _, stepStatus := range *rc.getStepsContext() {
-		if !stepStatus.Success {
+		if stepStatus.Conclusion == stepStatusFailure {
 			jobStatus = "failure"
 			break
 		}
@@ -869,6 +923,10 @@ func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
 		env["GITHUB_GRAPHQL_URL"] = fmt.Sprintf("https://%s/api/graphql", rc.Config.GitHubInstance)
 	}
 
+	if rc.Config.ArtifactServerPath != "" {
+		setActionRuntimeVars(rc, env)
+	}
+
 	job := rc.Run.Job()
 	if job.RunsOn() != nil {
 		for _, runnerLabel := range job.RunsOn() {
@@ -888,6 +946,20 @@ func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
 	return env
 }
 
+func setActionRuntimeVars(rc *RunContext, env map[string]string) {
+	actionsRuntimeURL := os.Getenv("ACTIONS_RUNTIME_URL")
+	if actionsRuntimeURL == "" {
+		actionsRuntimeURL = fmt.Sprintf("http://%s:%s/", common.GetOutboundIP().String(), rc.Config.ArtifactServerPort)
+	}
+	env["ACTIONS_RUNTIME_URL"] = actionsRuntimeURL
+
+	actionsRuntimeToken := os.Getenv("ACTIONS_RUNTIME_TOKEN")
+	if actionsRuntimeToken == "" {
+		actionsRuntimeToken = "token"
+	}
+	env["ACTIONS_RUNTIME_TOKEN"] = actionsRuntimeToken
+}
+
 func (rc *RunContext) localCheckoutPath() (string, bool) {
 	if rc.Config.ForceRemoteCheckout {
 		return "", false
@@ -899,4 +971,38 @@ func (rc *RunContext) localCheckoutPath() (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func (rc *RunContext) handleCredentials() (username, password string, err error) {
+	// TODO: remove below 2 lines when we can release act with breaking changes
+	username = rc.Config.Secrets["DOCKER_USERNAME"]
+	password = rc.Config.Secrets["DOCKER_PASSWORD"]
+
+	container := rc.Run.Job().Container()
+	if container == nil || container.Credentials == nil {
+		return
+	}
+
+	if container.Credentials != nil && len(container.Credentials) != 2 {
+		err = fmt.Errorf("invalid property count for key 'credentials:'")
+		return
+	}
+
+	ee := rc.NewExpressionEvaluator()
+	var ok bool
+	if username, ok = ee.InterpolateWithStringCheck(container.Credentials["username"]); !ok {
+		err = fmt.Errorf("failed to interpolate container.credentials.username")
+		return
+	}
+	if password, ok = ee.InterpolateWithStringCheck(container.Credentials["password"]); !ok {
+		err = fmt.Errorf("failed to interpolate container.credentials.password")
+		return
+	}
+
+	if container.Credentials["username"] == "" || container.Credentials["password"] == "" {
+		err = fmt.Errorf("container.credentials cannot be empty")
+		return
+	}
+
+	return username, password, err
 }

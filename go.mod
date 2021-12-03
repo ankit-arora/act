@@ -11,24 +11,27 @@ require (
 	github.com/containerd/containerd v1.5.5 // indirect
 	github.com/containerd/continuity v0.2.0 // indirect
 	github.com/creack/pty v1.1.11 // indirect
-	github.com/docker/cli v20.10.8+incompatible
-	github.com/docker/docker v20.10.8+incompatible
+	github.com/docker/cli v20.10.10+incompatible
+	github.com/docker/distribution v2.7.1+incompatible
+	github.com/docker/docker v20.10.10+incompatible
 	github.com/go-git/go-billy/v5 v5.3.1
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/go-ini/ini v1.63.2
+	github.com/go-ini/ini v1.64.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/google/uuid v1.2.0
 	github.com/joho/godotenv v1.4.0
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/go-homedir v1.1.0
-	github.com/moby/buildkit v0.9.0
+	github.com/moby/buildkit v0.9.2
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/opencontainers/runc v1.0.2 // indirect
+	github.com/opencontainers/selinux v1.10.0
 	github.com/pkg/errors v0.9.1
 	github.com/robertkrimen/otto v0.0.0-20210614181706-373ff5438452
 	github.com/sabhiram/go-gitignore v0.0.0-20201211210132-54b8a0bf510f

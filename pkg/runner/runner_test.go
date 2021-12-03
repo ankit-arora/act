@@ -16,7 +16,7 @@ import (
 	"github.com/nektos/act/pkg/model"
 )
 
-var baseImage string = "node:12-buster-slim"
+var baseImage = "node:12-buster-slim"
 
 func init() {
 	if p := os.Getenv("ACT_TEST_IMAGE"); p != "" {
@@ -97,6 +97,7 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "fail", "push", "exit with `FAILURE`: 1", platforms, ""},
 		{"testdata", "runs-on", "push", "", platforms, ""},
 		{"testdata", "checkout", "push", "", platforms, ""},
+		{"testdata", "shells/defaults", "push", "", platforms, ""},
 		{"testdata", "shells/pwsh", "push", "", map[string]string{"ubuntu-latest": "ghcr.io/justingrote/act-pwsh:latest"}, ""}, // custom image with pwsh
 		{"testdata", "shells/bash", "push", "", platforms, ""},
 		{"testdata", "shells/python", "push", "", map[string]string{"ubuntu-latest": "node:12-buster"}, ""}, // slim doesn't have python
@@ -144,6 +145,9 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "issue-598", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 		{"testdata", "env-and-path", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
 
+		{"testdata", "outputs", "push", "", platforms, ""},
+		{"testdata", "steps-context/conclusion", "push", "", platforms, ""},
+		{"testdata", "steps-context/outcome", "push", "", platforms, ""},
 		{"../model/testdata", "strategy", "push", "", platforms, ""}, // TODO: move all testdata into pkg so we can validate it with planner and runner
 		// {"testdata", "issue-228", "push", "", platforms, ""}, // TODO [igni]: Remove this once everything passes
 

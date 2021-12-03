@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
+	"github.com/nektos/act/pkg/artifacts"
 	"github.com/nektos/act/pkg/common"
 	"github.com/nektos/act/pkg/model"
 	"github.com/nektos/act/pkg/runner"
@@ -44,6 +45,7 @@ func Execute(ctx context.Context, version string) {
 	rootCmd.Flags().BoolVarP(&input.reuseContainers, "reuse", "r", false, "reuse action containers to maintain state")
 	rootCmd.Flags().BoolVarP(&input.bindWorkdir, "bind", "b", false, "bind working directory to container, rather than copy")
 	rootCmd.Flags().BoolVarP(&input.forcePull, "pull", "p", false, "pull docker image(s) even if already present")
+	rootCmd.Flags().BoolVarP(&input.forceRebuild, "rebuild", "", false, "rebuild local action docker image(s) even if already present")
 	rootCmd.Flags().BoolVarP(&input.autodetectEvent, "detect-event", "", false, "Use first event type from workflow as event that triggered the workflow")
 	rootCmd.Flags().StringVarP(&input.eventPath, "eventpath", "e", "", "path to event JSON file")
 	rootCmd.Flags().StringVar(&input.defaultBranch, "defaultbranch", "", "the name of the main branch")
@@ -66,6 +68,8 @@ func Execute(ctx context.Context, version string) {
 	rootCmd.PersistentFlags().StringVarP(&input.containerArchitecture, "container-architecture", "", "", "Architecture which should be used to run containers, e.g.: linux/amd64. If not specified, will use host default architecture. Requires Docker server API Version 1.41+. Ignored on earlier Docker server platforms.")
 	rootCmd.PersistentFlags().StringVarP(&input.containerDaemonSocket, "container-daemon-socket", "", "/var/run/docker.sock", "Path to Docker daemon socket which will be mounted to containers")
 	rootCmd.PersistentFlags().StringVarP(&input.githubInstance, "github-instance", "", "github.com", "GitHub instance to use. Don't use this if you are not using GitHub Enterprise Server.")
+	rootCmd.PersistentFlags().StringVarP(&input.artifactServerPath, "artifact-server-path", "", "", "Defines the path where the artifact server stores uploads and retrieves downloads from. If not specified the artifact server will not start.")
+	rootCmd.PersistentFlags().StringVarP(&input.artifactServerPort, "artifact-server-port", "", "34567", "Defines the port where the artifact server listens (will only bind to localhost).")
 	rootCmd.SetArgs(args())
 
 	if err := rootCmd.Execute(); err != nil {
@@ -257,6 +261,7 @@ func newRunCommand(ctx context.Context, input *Input) func(*cobra.Command, []str
 			EventPath:             input.EventPath(),
 			DefaultBranch:         defaultbranch,
 			ForcePull:             input.forcePull,
+			ForceRebuild:          input.forceRebuild,
 			ReuseContainers:       input.reuseContainers,
 			Workdir:               input.Workdir(),
 			BindWorkdir:           input.bindWorkdir,
@@ -274,11 +279,15 @@ func newRunCommand(ctx context.Context, input *Input) func(*cobra.Command, []str
 			ContainerCapAdd:       input.containerCapAdd,
 			ContainerCapDrop:      input.containerCapDrop,
 			AutoRemove:            input.autoRemove,
+			ArtifactServerPath:    input.artifactServerPath,
+			ArtifactServerPort:    input.artifactServerPort,
 		}
 		r, err := runner.New(config)
 		if err != nil {
 			return err
 		}
+
+		cancel := artifacts.Serve(ctx, input.artifactServerPath, input.artifactServerPort)
 
 		ctx = common.WithDryrun(ctx, input.dryrun)
 		if watch, err := cmd.Flags().GetBool("watch"); err != nil {
@@ -287,7 +296,11 @@ func newRunCommand(ctx context.Context, input *Input) func(*cobra.Command, []str
 			return watchAndRun(ctx, r.NewPlanExecutor(plan))
 		}
 
-		return r.NewPlanExecutor(plan)(ctx)
+		executor := r.NewPlanExecutor(plan).Finally(func(ctx context.Context) error {
+			cancel()
+			return nil
+		})
+		return executor(ctx)
 	}
 }
 

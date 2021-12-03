@@ -189,6 +189,7 @@ func getScriptName(rc *RunContext, step *model.Step) string {
 	return fmt.Sprintf("workflow/%s", scriptName)
 }
 
+// nolint:gocyclo
 func (sc *StepContext) setupShellCommand() common.Executor {
 	rc := sc.RunContext
 	step := sc.Step
@@ -216,6 +217,11 @@ func (sc *StepContext) setupShellCommand() common.Executor {
 		}
 		if step.Shell == "" {
 			step.Shell = rc.Run.Workflow.Defaults.Run.Shell
+		}
+		if rc.Run.Job().Container() != nil {
+			if rc.Run.Job().Container().Image != "" && step.Shell == "" {
+				step.Shell = "sh"
+			}
 		}
 
 		// Reference: https://github.com/actions/runner/blob/8109c962f09d9acc473d92c595ff43afceddb347/src/Runner.Worker/Handlers/ScriptHandlerHelpers.cs#L47-L64
@@ -483,6 +489,11 @@ func (sc *StepContext) runAction(actionDir string, actionPath string, localActio
 
 		sc.Env = mergeMaps(sc.Env, action.Runs.Env)
 
+		ee := sc.NewExpressionEvaluator()
+		for k, v := range sc.Env {
+			sc.Env[k] = ee.Interpolate(v)
+		}
+
 		log.Debugf("type=%v actionDir=%s actionPath=%s workdir=%s actionCacheDir=%s actionName=%s containerActionDir=%s", step.Type(), actionDir, actionPath, rc.Config.Workdir, rc.ActionCacheDir(), actionName, containerActionDir)
 
 		maybeCopyToActionDir := func() error {
@@ -551,6 +562,8 @@ func (sc *StepContext) evalDockerArgs(action *model.Action, cmd *[]string) {
 	}
 }
 
+// TODO: break out parts of function to reduce complexicity
+// nolint:gocyclo
 func (sc *StepContext) execAsDocker(ctx context.Context, action *model.Action, actionName string, containerLocation string, actionLocation string, rc *RunContext, step *model.Step, localAction bool) error {
 	var prepImage common.Executor
 	var image string
@@ -587,9 +600,9 @@ func (sc *StepContext) execAsDocker(ctx context.Context, action *model.Action, a
 			}
 		}
 
-		if !correctArchExists {
+		if !correctArchExists || rc.Config.ForceRebuild {
 			log.Debugf("image '%s' for architecture '%s' will be built from context '%s", image, rc.Config.ContainerArchitecture, contextDir)
-			var actionContainer container.Container = nil
+			var actionContainer container.Container
 			if localAction {
 				actionContainer = sc.RunContext.JobContainer
 			}
@@ -614,7 +627,14 @@ func (sc *StepContext) execAsDocker(ctx context.Context, action *model.Action, a
 	}
 	entrypoint := strings.Fields(eval.Interpolate(step.With["entrypoint"]))
 	if len(entrypoint) == 0 {
-		entrypoint = action.Runs.Entrypoint
+		if action.Runs.Entrypoint != "" {
+			entrypoint, err = shellquote.Split(action.Runs.Entrypoint)
+			if err != nil {
+				return err
+			}
+		} else {
+			entrypoint = nil
+		}
 	}
 	stepContainer := sc.newStepContainer(ctx, image, cmd, entrypoint)
 	if stepContainer == nil {

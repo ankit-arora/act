@@ -48,22 +48,25 @@ func TestEvaluate(t *testing.T) {
 		},
 		StepResults: map[string]*stepResult{
 			"idwithnothing": {
+				Conclusion: stepStatusSuccess,
+				Outcome:    stepStatusFailure,
 				Outputs: map[string]string{
 					"foowithnothing": "barwithnothing",
 				},
-				Success: true,
 			},
 			"id-with-hyphens": {
+				Conclusion: stepStatusSuccess,
+				Outcome:    stepStatusFailure,
 				Outputs: map[string]string{
 					"foo-with-hyphens": "bar-with-hyphens",
 				},
-				Success: true,
 			},
 			"id_with_underscores": {
+				Conclusion: stepStatusSuccess,
+				Outcome:    stepStatusFailure,
 				Outputs: map[string]string{
 					"foo_with_underscores": "bar_with_underscores",
 				},
-				Success: true,
 			},
 		},
 	}
@@ -92,6 +95,7 @@ func TestEvaluate(t *testing.T) {
 		{"toJson({'foo':'bar'})", "{\n  \"foo\": \"bar\"\n}", ""},
 		{"(fromJSON('{\"foo\":\"bar\"}')).foo", "bar", ""},
 		{"(fromJson('{\"foo\":\"bar\"}')).foo", "bar", ""},
+		{"(fromJson('[\"foo\",\"bar\"]'))[1]", "bar", ""},
 		{"hashFiles('**/non-extant-files')", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", ""},
 		{"hashFiles('**/non-extant-files', '**/more-non-extant-files')", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", ""},
 		{"hashFiles('**/non.extant.files')", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", ""},
@@ -105,8 +109,14 @@ func TestEvaluate(t *testing.T) {
 		{"github.run_id", "1", ""},
 		{"github.run_number", "1", ""},
 		{"job.status", "success", ""},
+		{"steps.idwithnothing.conclusion", "success", ""},
+		{"steps.idwithnothing.outcome", "failure", ""},
 		{"steps.idwithnothing.outputs.foowithnothing", "barwithnothing", ""},
+		{"steps.id-with-hyphens.conclusion", "success", ""},
+		{"steps.id-with-hyphens.outcome", "failure", ""},
 		{"steps.id-with-hyphens.outputs.foo-with-hyphens", "bar-with-hyphens", ""},
+		{"steps.id_with_underscores.conclusion", "success", ""},
+		{"steps.id_with_underscores.outcome", "failure", ""},
 		{"steps.id_with_underscores.outputs.foo_with_underscores", "bar_with_underscores", ""},
 		{"runner.os", "Linux", ""},
 		{"matrix.os", "Linux", ""},
