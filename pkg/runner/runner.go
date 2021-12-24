@@ -22,33 +22,33 @@ type Runner interface {
 
 // Config contains the config for a new runner
 type Config struct {
-	Actor                 string            // the user that triggered the event
-	Workdir               string            // path to working directory
-	BindWorkdir           bool              // bind the workdir to the job container
-	EventName             string            // name of event to run
-	EventPath             string            // path to JSON file to use for event.json in containers
-	DefaultBranch         string            // name of the main branch for this repository
-	ReuseContainers       bool              // reuse containers to maintain state
-	ForcePull             bool              // force pulling of the image, even if already present
-	ForceRebuild          bool              // force rebuilding local docker image action
-	LogOutput             bool              // log the output from docker run
-	Env                   map[string]string // env for containers
-	Secrets               map[string]string // list of secrets
-	InsecureSecrets       bool              // switch hiding output when printing to terminal
-	Platforms             map[string]string // list of platforms
-	Privileged            bool              // use privileged mode
-	UsernsMode            string            // user namespace to use
-	ContainerArchitecture string            // Desired OS/architecture platform for running containers
-	ContainerDaemonSocket string            // Path to Docker daemon socket
-	UseGitIgnore          bool              // controls if paths in .gitignore should not be copied into container, default true
-	GitHubInstance        string            // GitHub instance to use, default "github.com"
-	ContainerCapAdd       []string          // list of kernel capabilities to add to the containers
-	ContainerCapDrop      []string          // list of kernel capabilities to remove from the containers
-	AutoRemove            bool              // controls if the container is automatically removed upon workflow completion
+	Actor                 string                       // the user that triggered the event
+	Workdir               string                       // path to working directory
+	BindWorkdir           bool                         // bind the workdir to the job container
+	EventName             string                       // name of event to run
+	EventPath             string                       // path to JSON file to use for event.json in containers
+	DefaultBranch         string                       // name of the main branch for this repository
+	ReuseContainers       bool                         // reuse containers to maintain state
+	ForcePull             bool                         // force pulling of the image, even if already present
+	ForceRebuild          bool                         // force rebuilding local docker image action
+	LogOutput             bool                         // log the output from docker run
+	Env                   map[string]string            // env for containers
+	Secrets               map[string]string            // list of secrets
+	InsecureSecrets       bool                         // switch hiding output when printing to terminal
+	Platforms             map[string]string            // list of platforms
+	Privileged            bool                         // use privileged mode
+	UsernsMode            string                       // user namespace to use
+	ContainerArchitecture string                       // Desired OS/architecture platform for running containers
+	ContainerDaemonSocket string                       // Path to Docker daemon socket
+	UseGitIgnore          bool                         // controls if paths in .gitignore should not be copied into container, default true
+	GitHubInstance        string                       // GitHub instance to use, default "github.com"
+	ContainerCapAdd       []string                     // list of kernel capabilities to add to the containers
+	ContainerCapDrop      []string                     // list of kernel capabilities to remove from the containers
+	AutoRemove            bool                         // controls if the container is automatically removed upon workflow completion
+	ArtifactServerPath    string                       // the path where the artifact server stores uploads
+	ArtifactServerPort    string                       // the port the artifact server binds to
+	CompositeRestrictions *model.CompositeRestrictions // describes which features are available in composite actions
 	ForceRemoteCheckout   bool
-	CompositeRestrictions *model.CompositeRestrictions
-	ArtifactServerPath    string // the path where the artifact server stores uploads
-	ArtifactServerPort    string // the port the artifact server binds to
 }
 
 // Resolves the equivalent host path inside the container
@@ -167,7 +167,7 @@ func (runner *runnerImpl) NewPlanExecutor(plan *model.Plan) common.Executor {
 						}
 
 						return nil
-					})(WithJobLogger(ctx, jobName, rc.Config.Secrets, rc.Config.InsecureSecrets))
+					})(common.WithJobErrorContainer(WithJobLogger(ctx, jobName, rc.Config.Secrets, rc.Config.InsecureSecrets)))
 				})
 				b++
 				if b == maxParallel {
@@ -179,15 +179,29 @@ func (runner *runnerImpl) NewPlanExecutor(plan *model.Plan) common.Executor {
 		}
 	}
 
-	return common.NewPipelineExecutor(pipeline...)
+	return common.NewPipelineExecutor(pipeline...).Then(handleFailure(plan))
+}
+
+func handleFailure(plan *model.Plan) common.Executor {
+	return func(ctx context.Context) error {
+		for _, stage := range plan.Stages {
+			for _, run := range stage.Runs {
+				if run.Job().Result == "failure" {
+					return fmt.Errorf("Job '%s' failed", run.String())
+				}
+			}
+		}
+		return nil
+	}
 }
 
 func (runner *runnerImpl) newRunContext(run *model.Run, matrix map[string]interface{}) *RunContext {
 	rc := &RunContext{
-		Config:    runner.config,
-		Run:       run,
-		EventJSON: runner.eventJSON,
-		Matrix:    matrix,
+		Config:      runner.config,
+		Run:         run,
+		EventJSON:   runner.eventJSON,
+		StepResults: make(map[string]*model.StepResult),
+		Matrix:      matrix,
 	}
 	rc.ExprEval = rc.NewExpressionEvaluator()
 	rc.Name = rc.ExprEval.Interpolate(run.String())

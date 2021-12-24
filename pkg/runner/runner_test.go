@@ -16,7 +16,7 @@ import (
 	"github.com/nektos/act/pkg/model"
 )
 
-var baseImage = "node:12-buster-slim"
+var baseImage = "node:16-buster-slim"
 
 func init() {
 	if p := os.Getenv("ACT_TEST_IMAGE"); p != "" {
@@ -98,9 +98,11 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "runs-on", "push", "", platforms, ""},
 		{"testdata", "checkout", "push", "", platforms, ""},
 		{"testdata", "shells/defaults", "push", "", platforms, ""},
+		// TODO: figure out why it fails
+		// {"testdata", "shells/custom", "push", "", map[string]string{"ubuntu-latest": "ghcr.io/justingrote/act-pwsh:latest"}, ""}, // custom image with pwsh
 		{"testdata", "shells/pwsh", "push", "", map[string]string{"ubuntu-latest": "ghcr.io/justingrote/act-pwsh:latest"}, ""}, // custom image with pwsh
 		{"testdata", "shells/bash", "push", "", platforms, ""},
-		{"testdata", "shells/python", "push", "", map[string]string{"ubuntu-latest": "node:12-buster"}, ""}, // slim doesn't have python
+		{"testdata", "shells/python", "push", "", map[string]string{"ubuntu-latest": "node:16-buster"}, ""}, // slim doesn't have python
 		{"testdata", "shells/sh", "push", "", platforms, ""},
 		{"testdata", "job-container", "push", "", platforms, ""},
 		{"testdata", "job-container-non-root", "push", "", platforms, ""},
@@ -110,6 +112,7 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "remote-action-js", "push", "", platforms, ""},
 		{"testdata", "local-action-docker-url", "push", "", platforms, ""},
 		{"testdata", "local-action-dockerfile", "push", "", platforms, ""},
+		{"testdata", "local-action-via-composite-dockerfile", "push", "", platforms, ""},
 		{"testdata", "local-action-js", "push", "", platforms, ""},
 		{"testdata", "matrix", "push", "", platforms, ""},
 		{"testdata", "matrix-include-exclude", "push", "", platforms, ""},
@@ -117,37 +120,16 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "workdir", "push", "", platforms, ""},
 		{"testdata", "defaults-run", "push", "", platforms, ""},
 		{"testdata", "uses-composite", "push", "", platforms, ""},
+		{"testdata", "uses-composite-with-error", "push", "Job 'failing-composite-action' failed", platforms, ""},
 		{"testdata", "uses-nested-composite", "push", "", platforms, ""},
 		{"testdata", "issue-597", "push", "", platforms, ""},
 		{"testdata", "issue-598", "push", "", platforms, ""},
 		{"testdata", "env-and-path", "push", "", platforms, ""},
-		{"testdata", "fail", "push", "exit with `FAILURE`: 1", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "runs-on", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "checkout", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "shells/bash", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "shells/python", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "shells/sh", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "job-container", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "job-container-non-root", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		// {"testdata", "uses-docker-url", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, Docker actions not supported
-		// {"testdata", "remote-action-docker", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, Docker actions not supported
-		{"testdata", "remote-action-js", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		// {"testdata", "local-action-docker-url", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, Docker actions not supported
-		// {"testdata", "local-action-dockerfile", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, Docker actions not supported
-		{"testdata", "local-action-js", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "matrix", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "matrix-include-exclude", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "commands", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		// {"testdata", "workdir", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, /root doesn't make sense for hostexecutor
-		// {"testdata", "defaults-run", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""}, /tmp doesn't make sense for hostexecutor
-		{"testdata", "uses-composite", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "issue-597", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "issue-598", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-		{"testdata", "env-and-path", "push", "", map[string]string{"ubuntu-latest": "-self-hosted"}, ""},
-
 		{"testdata", "outputs", "push", "", platforms, ""},
 		{"testdata", "steps-context/conclusion", "push", "", platforms, ""},
 		{"testdata", "steps-context/outcome", "push", "", platforms, ""},
+		{"testdata", "job-status-check", "push", "job 'fail' failed", platforms, ""},
+		{"testdata", "if-expressions", "push", "Job 'mytest' failed", platforms, ""},
 		{"../model/testdata", "strategy", "push", "", platforms, ""}, // TODO: move all testdata into pkg so we can validate it with planner and runner
 		// {"testdata", "issue-228", "push", "", platforms, ""}, // TODO [igni]: Remove this once everything passes
 

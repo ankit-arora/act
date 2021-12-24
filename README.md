@@ -191,8 +191,8 @@ It will save that information to `~/.actrc`, please refer to [Configuration](#co
   -p, --pull                             pull docker image(s) even if already present
   -q, --quiet                            disable logging of output from steps
       --rebuild                          rebuild local action docker image(s) even if already present
-  -r, --reuse                            reuse action containers to maintain state
-      --rm                               automatically remove containers just before exit
+  -r, --reuse                            don't remove container(s) on successfully completed workflow(s) to maintain state between runs
+      --rm                               automatically remove container(s)/volume(s) after a workflow(s) failure
   -s, --secret stringArray               secret to make available to actions with optional value (e.g. -s mysecret=foo or -s mysecret)
       --secret-file string               file with list of secrets to read from (e.g. --secret-file .secrets) (default ".secrets")
       --use-gitignore                    Controls whether paths specified in .gitignore should be copied into container (default true)
@@ -243,9 +243,9 @@ GitHub Actions offers managed [virtual environments](https://help.github.com/en/
 
 | GitHub Runner   | Micro Docker Image             | Medium Docker Image                                       | Large Docker Image                                         |
 | --------------- | ------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------- |
-| `ubuntu-latest` | [`node:12-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-latest`][docker_images] | [`ghcr.io/catthehacker/ubuntu:full-latest`][docker_images] |
-| `ubuntu-20.04`  | [`node:12-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-20.04`][docker_images]  | [`ghcr.io/catthehacker/ubuntu:full-20.04`][docker_images]  |
-| `ubuntu-18.04`  | [`node:12-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-18.04`][docker_images]  | [`ghcr.io/catthehacker/ubuntu:full-18.04`][docker_images]  |
+| `ubuntu-latest` | [`node:16-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-latest`][docker_images] | [`ghcr.io/catthehacker/ubuntu:full-latest`][docker_images] |
+| `ubuntu-20.04`  | [`node:16-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-20.04`][docker_images]  | [`ghcr.io/catthehacker/ubuntu:full-20.04`][docker_images]  |
+| `ubuntu-18.04`  | [`node:16-buster-slim`][micro] | [`ghcr.io/catthehacker/ubuntu:act-18.04`][docker_images]  | [`ghcr.io/catthehacker/ubuntu:full-18.04`][docker_images]  |
 
 [micro]: https://hub.docker.com/_/buildpack-deps
 [docker_images]: https://github.com/catthehacker/docker_images
@@ -289,7 +289,7 @@ If you use multiple platforms in your workflow, you have to specify them to chan
 For example, if your workflow uses `ubuntu-18.04`, `ubuntu-16.04` and `ubuntu-latest`, specify all platforms like below
 
 ```sh
-act -P ubuntu-18.04=nektos/act-environments-ubuntu:18.04 -P ubuntu-latest=ubuntu:latest -P ubuntu-16.04=node:12-buster-slim
+act -P ubuntu-18.04=nektos/act-environments-ubuntu:18.04 -P ubuntu-latest=ubuntu:latest -P ubuntu-16.04=node:16-buster-slim
 ```
 
 # Secrets

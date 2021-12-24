@@ -36,6 +36,7 @@ func (rc *RunContext) commandHandler(ctx context.Context) common.LineHandler {
 		}
 
 		if resumeCommand != "" && command != resumeCommand {
+			logger.Infof("  \U00002699  %s", line)
 			return false
 		}
 		arg = unescapeCommandData(arg)
@@ -84,7 +85,7 @@ func (rc *RunContext) setOutput(ctx context.Context, kvPairs map[string]string, 
 		outputName = outputMapping.OutputName
 	}
 
-	result, ok := (*rc.getStepsContext())[stepID]
+	result, ok := rc.StepResults[stepID]
 	if !ok {
 		common.Logger(ctx).Infof("  \U00002757  no outputs used step '%s'", stepID)
 		return

@@ -36,7 +36,7 @@ type RunContext struct {
 	Env               map[string]string
 	ExtraPath         []string
 	CurrentStep       string
-	StepResults       map[string]*stepResult
+	StepResults       map[string]*model.StepResult
 	ExprEval          ExpressionEvaluator
 	JobContainer      container.Container
 	OutputMappings    map[MappableOutput]MappableOutput
@@ -54,21 +54,11 @@ type RunContext struct {
 func (rc *RunContext) Clone() *RunContext {
 	clone := *rc
 	clone.CurrentStep = ""
-	clone.ActionPath = ""
-	clone.ActionRef = ""
-	clone.ActionRepository = ""
 	clone.Composite = nil
 	clone.Inputs = nil
-	clone.StepResults = nil
+	clone.StepResults = make(map[string]*model.StepResult)
 	clone.Parent = rc
 	return &clone
-}
-
-func (rc *RunContext) InitStepResults(keys []string) {
-	rc.StepResults = make(map[string]*stepResult, len(keys))
-	for i := 0; i < len(keys); i++ {
-		rc.StepResults[keys[i]] = &stepResult{Conclusion: stepStatusSuccess, Outcome: stepStatusSuccess}
-	}
 }
 
 func (rc *RunContext) SetActPath(actPath string) {
@@ -89,46 +79,6 @@ type MappableOutput struct {
 
 func (rc *RunContext) String() string {
 	return fmt.Sprintf("%s/%s", rc.Run.Workflow.Name, rc.Name)
-}
-
-type stepStatus int
-
-const (
-	stepStatusSuccess stepStatus = iota
-	stepStatusFailure
-)
-
-var stepStatusStrings = [...]string{
-	"success",
-	"failure",
-}
-
-func (s stepStatus) MarshalText() ([]byte, error) {
-	return []byte(s.String()), nil
-}
-
-func (s *stepStatus) UnmarshalText(b []byte) error {
-	str := string(b)
-	for i, name := range stepStatusStrings {
-		if name == str {
-			*s = stepStatus(i)
-			return nil
-		}
-	}
-	return fmt.Errorf("invalid step status %q", str)
-}
-
-func (s stepStatus) String() string {
-	if int(s) >= len(stepStatusStrings) {
-		return ""
-	}
-	return stepStatusStrings[s]
-}
-
-type stepResult struct {
-	Outputs    map[string]string `json:"outputs"`
-	Conclusion stepStatus        `json:"conclusion"`
-	Outcome    stepStatus        `json:"outcome"`
 }
 
 // GetEnv returns the env for the context
@@ -241,6 +191,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 		}
 	}
 	hostname := rc.hostname()
+
 	return func(ctx context.Context) error {
 		rawLogger := common.Logger(ctx).WithField("raw_output", true)
 		logWriter := common.NewLineWriter(rc.commandHandler(ctx), func(s string) bool {
@@ -289,7 +240,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 		})
 
 		if rc.JobContainer == nil {
-			return errors.New("Failed to create Container")
+			return errors.New("failed to create Container")
 		}
 
 		var copyWorkspace bool
@@ -334,10 +285,8 @@ func (rc *RunContext) execJobContainer(cmd []string, cmdline string, env map[str
 func (rc *RunContext) stopJobContainer() common.Executor {
 	return func(ctx context.Context) error {
 		if rc.JobContainer != nil && !rc.Config.ReuseContainers {
-			return rc.JobContainer.Remove().Then(container.NewDockerVolumeRemoveExecutor(rc.jobContainerName(), false).If(func(ctx context.Context) bool {
-				_, isHost := rc.JobContainer.(*container.HostExecutor)
-				return !isHost
-			})).Finally(rc.JobContainer.Close())(common.WithLogger(context.Background(), common.Logger(ctx)))
+			return rc.JobContainer.Remove().
+				Then(container.NewDockerVolumeRemoveExecutor(rc.jobContainerName(), false).If(func(ctx context.Context) bool { return !rc.Local }))(ctx)
 		}
 		return nil
 	}
@@ -392,6 +341,21 @@ func (rc *RunContext) Executor() common.Executor {
 		}
 		steps = append(steps, rc.newStepExecutor(step))
 	}
+	steps = append(steps, func(ctx context.Context) error {
+		err := rc.stopJobContainer()(ctx)
+		if err != nil {
+			return err
+		}
+
+		rc.Run.Job().Result = "success"
+		jobError := common.JobError(ctx)
+		if jobError != nil {
+			rc.Run.Job().Result = "failure"
+		}
+
+		return nil
+	})
+
 	return common.NewPipelineExecutor(steps...).Finally(rc.interpolateOutputs()).Finally(func(ctx context.Context) error {
 		if rc.JobContainer != nil {
 			return rc.JobContainer.Close()(ctx)
@@ -411,6 +375,8 @@ func (rc *RunContext) CompositeExecutor() common.Executor {
 		stepcopy := step
 		steps = append(steps, rc.newStepExecutor(&stepcopy))
 	}
+
+	steps = append(steps, common.JobError)
 	return common.NewPipelineExecutor(steps...)
 }
 
@@ -421,22 +387,16 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 	}
 	return func(ctx context.Context) error {
 		rc.CurrentStep = sc.Step.ID
-		(*rc.getStepsContext())[rc.CurrentStep] = &stepResult{
-			Outcome:    stepStatusSuccess,
-			Conclusion: stepStatusSuccess,
+		rc.StepResults[rc.CurrentStep] = &model.StepResult{
+			Outcome:    model.StepStatusSuccess,
+			Conclusion: model.StepStatusSuccess,
 			Outputs:    make(map[string]string),
 		}
-		runStep, err := rc.EvalBool(sc.Step.If.Value)
 
+		runStep, err := sc.isEnabled(ctx)
 		if err != nil {
-			common.Logger(ctx).Errorf("  \u274C  Error in if: expression - %s", sc.Step)
-			exprEval, err := sc.setupEnv(ctx)
-			if err != nil {
-				return err
-			}
-			rc.ExprEval = exprEval
-			(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusFailure
-			(*rc.getStepsContext())[rc.CurrentStep].Outcome = stepStatusFailure
+			rc.StepResults[rc.CurrentStep].Conclusion = model.StepStatusFailure
+			rc.StepResults[rc.CurrentStep].Outcome = model.StepStatusFailure
 			return err
 		}
 
@@ -452,19 +412,19 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 		rc.ExprEval = exprEval
 
 		common.Logger(ctx).Infof("\u2B50  Run %s", sc.Step)
-		err = sc.Executor()(ctx)
+		err = sc.Executor(ctx)(ctx)
 		if err == nil {
 			common.Logger(ctx).Infof("  \u2705  Success - %s", sc.Step)
 		} else {
 			common.Logger(ctx).Errorf("  \u274C  Failure - %s", sc.Step)
 
-			rc.StepResults[rc.CurrentStep].Outcome = stepStatusFailure
+			rc.StepResults[rc.CurrentStep].Outcome = model.StepStatusFailure
 			if sc.Step.ContinueOnError {
 				common.Logger(ctx).Infof("Failed but continue next step")
 				err = nil
-				(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusSuccess
+				rc.StepResults[rc.CurrentStep].Conclusion = model.StepStatusSuccess
 			} else {
-				(*rc.getStepsContext())[rc.CurrentStep].Conclusion = stepStatusFailure
+				rc.StepResults[rc.CurrentStep].Conclusion = model.StepStatusFailure
 			}
 		}
 		return err
@@ -519,7 +479,7 @@ func (rc *RunContext) hostname() string {
 func (rc *RunContext) isEnabled(ctx context.Context) bool {
 	job := rc.Run.Job()
 	l := common.Logger(ctx)
-	runJob, err := rc.EvalBool(job.If.Value)
+	runJob, err := EvalBool(rc.ExprEval, job.If.Value)
 	if err != nil {
 		common.Logger(ctx).Errorf("  \u274C  Error in if: expression - %s", job.Name)
 		return false
@@ -542,64 +502,6 @@ func (rc *RunContext) isEnabled(ctx context.Context) bool {
 		return false
 	}
 	return true
-}
-
-var splitPattern *regexp.Regexp
-
-// EvalBool evaluates an expression against current run context
-func (rc *RunContext) EvalBool(expr string) (bool, error) {
-	if splitPattern == nil {
-		splitPattern = regexp.MustCompile(fmt.Sprintf(`%s|%s|\S+`, expressionPattern.String(), operatorPattern.String()))
-	}
-	if strings.HasPrefix(strings.TrimSpace(expr), "!") {
-		return false, errors.New("expressions starting with ! must be wrapped in ${{ }}")
-	}
-	if expr != "" {
-		parts := splitPattern.FindAllString(expr, -1)
-		var evaluatedParts []string
-		for i, part := range parts {
-			if operatorPattern.MatchString(part) {
-				evaluatedParts = append(evaluatedParts, part)
-				continue
-			}
-
-			interpolatedPart, isString := rc.ExprEval.InterpolateWithStringCheck(part)
-
-			// This peculiar transformation has to be done because the GitHub parser
-			// treats false returned from contexts as a string, not a boolean.
-			// Hence env.SOMETHING will be evaluated to true in an if: expression
-			// regardless if SOMETHING is set to false, true or any other string.
-			// It also handles some other weirdness that I found by trial and error.
-			if (expressionPattern.MatchString(part) && // it is an expression
-				!strings.Contains(part, "!")) && // but it's not negated
-				interpolatedPart == "false" && // and the interpolated string is false
-				(isString || previousOrNextPartIsAnOperator(i, parts)) { // and it's of type string or has an logical operator before or after
-				interpolatedPart = fmt.Sprintf("'%s'", interpolatedPart) // then we have to quote the false expression
-			}
-
-			evaluatedParts = append(evaluatedParts, interpolatedPart)
-		}
-
-		joined := strings.Join(evaluatedParts, " ")
-		v, _, err := rc.ExprEval.Evaluate(fmt.Sprintf("Boolean(%s)", joined))
-		if err != nil {
-			return false, err
-		}
-		log.Debugf("expression '%s' evaluated to '%s'", expr, v)
-		return v == "true", nil
-	}
-	return true, nil
-}
-
-func previousOrNextPartIsAnOperator(i int, parts []string) bool {
-	operator := false
-	if i > 0 {
-		operator = operatorPattern.MatchString(parts[i-1])
-	}
-	if i+1 < len(parts) {
-		operator = operator || operatorPattern.MatchString(parts[i+1])
-	}
-	return operator
 }
 
 func mergeMaps(maps ...map[string]string) map[string]string {
@@ -645,66 +547,25 @@ func trimToLen(s string, l int) string {
 	return s
 }
 
-type jobContext struct {
-	Status    string `json:"status"`
-	Container struct {
-		ID      string `json:"id"`
-		Network string `json:"network"`
-	} `json:"container"`
-	Services map[string]struct {
-		ID string `json:"id"`
-	} `json:"services"`
-}
-
-func (rc *RunContext) getJobContext() *jobContext {
+func (rc *RunContext) getJobContext() *model.JobContext {
 	jobStatus := "success"
-	for _, stepStatus := range *rc.getStepsContext() {
-		if stepStatus.Conclusion == stepStatusFailure {
+	for _, stepStatus := range rc.StepResults {
+		if stepStatus.Conclusion == model.StepStatusFailure {
 			jobStatus = "failure"
 			break
 		}
 	}
-	return &jobContext{
+	return &model.JobContext{
 		Status: jobStatus,
 	}
 }
 
-func (rc *RunContext) getStepsContext() *map[string]*stepResult {
-	if rc.StepResults == nil {
-		rc.StepResults = map[string]*stepResult{}
-	}
-	return &rc.StepResults
+func (rc *RunContext) getStepsContext() map[string]*model.StepResult {
+	return rc.StepResults
 }
 
-type githubContext struct {
-	Event            map[string]interface{} `json:"event"`
-	EventPath        string                 `json:"event_path"`
-	Workflow         string                 `json:"workflow"`
-	RunID            string                 `json:"run_id"`
-	RunNumber        string                 `json:"run_number"`
-	Actor            string                 `json:"actor"`
-	Repository       string                 `json:"repository"`
-	EventName        string                 `json:"event_name"`
-	Sha              string                 `json:"sha"`
-	Ref              string                 `json:"ref"`
-	HeadRef          string                 `json:"head_ref"`
-	BaseRef          string                 `json:"base_ref"`
-	Token            string                 `json:"token"`
-	Workspace        string                 `json:"workspace"`
-	Action           string                 `json:"action"`
-	ActionPath       string                 `json:"action_path"`
-	ActionRef        string                 `json:"action_ref"`
-	ActionRepository string                 `json:"action_repository"`
-	Job              string                 `json:"job"`
-	JobName          string                 `json:"job_name"`
-	RepositoryOwner  string                 `json:"repository_owner"`
-	RetentionDays    string                 `json:"retention_days"`
-	RunnerPerflog    string                 `json:"runner_perflog"`
-	RunnerTrackingID string                 `json:"runner_tracking_id"`
-}
-
-func (rc *RunContext) getGithubContext() *githubContext {
-	ghc := &githubContext{
+func (rc *RunContext) getGithubContext() *model.GithubContext {
+	ghc := &model.GithubContext{
 		Event:            make(map[string]interface{}),
 		EventPath:        rc.GetActPath() + "/workflow/event.json",
 		Workflow:         rc.Run.Workflow.Name,
@@ -729,10 +590,10 @@ func (rc *RunContext) getGithubContext() *githubContext {
 			return ghc
 		}
 	}
-	return ghc.applyDefaults(rc)
+	return applyDefaults(ghc, rc)
 }
 
-func (ghc *githubContext) applyDefaults(rc *RunContext) *githubContext {
+func applyDefaults(ghc *model.GithubContext, rc *RunContext) *model.GithubContext {
 	if ghc.RunID == "" {
 		ghc.RunID = "1"
 	}
@@ -809,7 +670,7 @@ func (ghc *githubContext) applyDefaults(rc *RunContext) *githubContext {
 	return ghc
 }
 
-func (ghc *githubContext) isLocalCheckout(step *model.Step) bool {
+func isLocalCheckout(ghc *model.GithubContext, step *model.Step) bool {
 	if step.Type() == model.StepTypeInvalid {
 		// This will be errored out by the executor later, we need this here to avoid a null panic though
 		return false
@@ -893,9 +754,9 @@ func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
 	env["GITHUB_RUN_ID"] = github.RunID
 	env["GITHUB_RUN_NUMBER"] = github.RunNumber
 	env["GITHUB_ACTION"] = github.Action
-	if github.ActionPath != "" {
-		env["GITHUB_ACTION_PATH"] = github.ActionPath
-	}
+	env["GITHUB_ACTION_PATH"] = github.ActionPath
+	env["GITHUB_ACTION_REPOSITORY"] = github.ActionRepository
+	env["GITHUB_ACTION_REF"] = github.ActionRef
 	env["GITHUB_ACTIONS"] = "true"
 	env["GITHUB_ACTOR"] = github.Actor
 	env["GITHUB_REPOSITORY"] = github.Repository
@@ -966,7 +827,7 @@ func (rc *RunContext) localCheckoutPath() (string, bool) {
 	}
 	ghContext := rc.getGithubContext()
 	for _, step := range rc.Run.Job().Steps {
-		if ghContext.isLocalCheckout(step) {
+		if isLocalCheckout(ghContext, step) {
 			return step.With["path"], true
 		}
 	}
@@ -989,12 +850,11 @@ func (rc *RunContext) handleCredentials() (username, password string, err error)
 	}
 
 	ee := rc.NewExpressionEvaluator()
-	var ok bool
-	if username, ok = ee.InterpolateWithStringCheck(container.Credentials["username"]); !ok {
+	if username = ee.Interpolate(container.Credentials["username"]); username == "" {
 		err = fmt.Errorf("failed to interpolate container.credentials.username")
 		return
 	}
-	if password, ok = ee.InterpolateWithStringCheck(container.Credentials["password"]); !ok {
+	if password = ee.Interpolate(container.Credentials["password"]); password == "" {
 		err = fmt.Errorf("failed to interpolate container.credentials.password")
 		return
 	}
