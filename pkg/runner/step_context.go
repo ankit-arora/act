@@ -760,9 +760,6 @@ func (sc *StepContext) execAsComposite(ctx context.Context, step *model.Step, _ 
 	compositerc.Inputs = inputs
 	compositerc.ExprEval = compositerc.NewExpressionEvaluator()
 	err = compositerc.CompositeExecutor()(ctx)
-	if err != nil {
-		return err
-	}
 
 	// Map outputs to parent rc
 	eval = (&StepContext{
@@ -782,7 +779,7 @@ func (sc *StepContext) execAsComposite(ctx context.Context, step *model.Step, _ 
 			backup.Env[k] = v
 		}
 	}
-	return nil
+	return err
 }
 
 func (sc *StepContext) populateEnvsFromInput(action *model.Action, rc *RunContext) {
