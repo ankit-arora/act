@@ -785,6 +785,15 @@ func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
 		env["GITHUB_API_URL"] = fmt.Sprintf("https://%s/api/v3", rc.Config.GitHubInstance)
 		env["GITHUB_GRAPHQL_URL"] = fmt.Sprintf("https://%s/api/graphql", rc.Config.GitHubInstance)
 	}
+	if len(rc.Config.GitHubServerUrl) > 0 {
+		env["GITHUB_SERVER_URL"] = rc.Config.GitHubServerUrl
+	}
+	if len(rc.Config.GitHubServerUrl) > 0 {
+		env["GITHUB_API_URL"] = rc.Config.GitHubApiServerUrl
+	}
+	if len(rc.Config.GitHubServerUrl) > 0 {
+		env["GITHUB_GRAPHQL_URL"] = rc.Config.GitHubGraphQlApiServerUrl
+	}
 
 	if rc.Config.ArtifactServerPath != "" {
 		setActionRuntimeVars(rc, env)

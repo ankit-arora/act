@@ -75,7 +75,11 @@ func (sc *StepContext) Executor(ctx context.Context) common.Executor {
 			return common.NewErrorExecutor(formatError(step.Uses))
 		}
 
-		remoteAction.URL = rc.Config.GitHubInstance
+		if len(rc.Config.GitHubServerUrl) > 0 {
+			remoteAction.URL = rc.Config.GitHubServerUrl
+		} else {
+			remoteAction.URL = fmt.Sprintf("https://%s", rc.Config.GitHubInstance)
+		}
 
 		github := rc.getGithubContext()
 		if !rc.Config.ForceRemoteCheckout && remoteAction.IsCheckout() && isLocalCheckout(github, step) {
@@ -801,7 +805,7 @@ type remoteAction struct {
 }
 
 func (ra *remoteAction) CloneURL() string {
-	return fmt.Sprintf("https://%s/%s/%s", ra.URL, ra.Org, ra.Repo)
+	return fmt.Sprintf("%s/%s/%s", ra.URL, ra.Org, ra.Repo)
 }
 
 func (ra *remoteAction) IsCheckout() bool {
@@ -827,7 +831,7 @@ func newRemoteAction(action string) *remoteAction {
 		Repo: matches[2],
 		Path: matches[4],
 		Ref:  matches[6],
-		URL:  "github.com",
+		URL:  "https://github.com",
 	}
 }
 
