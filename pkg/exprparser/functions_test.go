@@ -111,6 +111,8 @@ func TestFunctionJoin(t *testing.T) {
 		expected interface{}
 		name     string
 	}{
+		{"join(fromJSON('{true: \"b\", \"c\": true, \"d\": false, \"e\": 4544}').*, ',')", "b,true,false,4544", "join-arr-start"},
+		{"join(fromJSON('{\"a\": \"b\", \"c\": true, \"d\": false, \"e\": 4544}').*, ',')", "b,true,false,4544", "join-arr-start"},
 		{"join(fromJSON('[\"a\", \"b\"]'), ',')", "a,b", "join-arr"},
 		{"join('string', ',')", "string", "join-str"},
 		{"join(1, ',')", "1", "join-number"},

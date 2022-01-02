@@ -191,6 +191,13 @@ func (impl *interperterImpl) evaluateArrayDeref(arrayDerefNode *actionlint.Array
 	if err != nil {
 		return nil, err
 	}
+	if mapping, ok := left.(map[string]interface{}); ok {
+		arr := []interface{}{}
+		for _, v := range mapping {
+			arr = append(arr, v)
+		}
+		return reflect.ValueOf(arr).Interface(), nil
+	}
 
 	return reflect.ValueOf(left).Interface(), nil
 }
@@ -254,7 +261,7 @@ func (impl *interperterImpl) getPropertyValue(left reflect.Value, property strin
 		return values, nil
 	}
 
-	return nil, fmt.Errorf("Unable to dereference '%s' on non-struct '%s'", property, left.Kind())
+	return nil, nil
 }
 
 func (impl *interperterImpl) getMapValue(value reflect.Value) (interface{}, error) {
