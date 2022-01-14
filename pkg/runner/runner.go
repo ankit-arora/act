@@ -131,9 +131,9 @@ func (runner *runnerImpl) NewPlanExecutor(plan *model.Plan) common.Executor {
 	maxJobNameLen := 0
 
 	pipeline := make([]common.Executor, 0)
-	for s, stage := range plan.Stages {
+	for _, stage := range plan.Stages {
 		stageExecutor := make([]common.Executor, 0)
-		for r, run := range stage.Runs {
+		for _, run := range stage.Runs {
 			job := run.Job()
 			matrixes := job.GetMatrixes()
 			maxParallel := 4
