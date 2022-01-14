@@ -358,6 +358,13 @@ func (rc *RunContext) Executor() common.Executor {
 
 	return common.NewPipelineExecutor(steps...).Finally(rc.interpolateOutputs()).Finally(func(ctx context.Context) error {
 		if rc.JobContainer != nil {
+			ctx := context.Background()
+			if rc.Config.AutoRemove {
+				log.Infof("Cleaning up container for job %s", rc.JobName)
+				if err := rc.stopJobContainer()(ctx); err != nil {
+					log.Errorf("Error while cleaning container: %v", err)
+				}
+			}
 			return rc.JobContainer.Close()(ctx)
 		}
 		return nil
