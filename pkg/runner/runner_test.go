@@ -97,6 +97,7 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "fail", "push", "exit with `FAILURE`: 1", platforms, ""},
 		{"testdata", "runs-on", "push", "", platforms, ""},
 		{"testdata", "checkout", "push", "", platforms, ""},
+		{"testdata", "non-existent-action", "push", "Job 'nopanic' failed", platforms, ""},
 		{"testdata", "shells/defaults", "push", "", platforms, ""},
 		// TODO: figure out why it fails
 		// {"testdata", "shells/custom", "push", "", map[string]string{"ubuntu-latest": "ghcr.io/justingrote/act-pwsh:latest"}, ""}, // custom image with pwsh
@@ -122,8 +123,10 @@ func TestRunEvent(t *testing.T) {
 		{"testdata", "uses-composite", "push", "", platforms, ""},
 		{"testdata", "uses-composite-with-error", "push", "Job 'failing-composite-action' failed", platforms, ""},
 		{"testdata", "uses-nested-composite", "push", "", platforms, ""},
+		{"testdata", "composite-fail-with-output", "push", "", platforms, ""},
 		{"testdata", "issue-597", "push", "", platforms, ""},
 		{"testdata", "issue-598", "push", "", platforms, ""},
+		{"testdata", "if-env-act", "push", "", platforms, ""},
 		{"testdata", "env-and-path", "push", "", platforms, ""},
 		{"testdata", "outputs", "push", "", platforms, ""},
 		{"testdata", "steps-context/conclusion", "push", "", platforms, ""},

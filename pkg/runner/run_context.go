@@ -339,7 +339,18 @@ func (rc *RunContext) Executor() common.Executor {
 		if step.ID == "" {
 			step.ID = fmt.Sprintf("%d", i)
 		}
-		steps = append(steps, rc.newStepExecutor(step))
+		stepExec := rc.newStepExecutor(step)
+		steps = append(steps, func(ctx context.Context) error {
+			err := stepExec(ctx)
+			if err != nil {
+				common.Logger(ctx).Errorf("%v", err)
+				common.SetJobError(ctx, err)
+			} else if ctx.Err() != nil {
+				common.Logger(ctx).Errorf("%v", ctx.Err())
+				common.SetJobError(ctx, ctx.Err())
+			}
+			return nil
+		})
 	}
 	steps = append(steps, func(ctx context.Context) error {
 		err := rc.stopJobContainer()(ctx)
@@ -380,7 +391,18 @@ func (rc *RunContext) CompositeExecutor() common.Executor {
 			step.ID = fmt.Sprintf("%d", i)
 		}
 		stepcopy := step
-		steps = append(steps, rc.newStepExecutor(&stepcopy))
+		stepExec := rc.newStepExecutor(&stepcopy)
+		steps = append(steps, func(ctx context.Context) error {
+			err := stepExec(ctx)
+			if err != nil {
+				common.Logger(ctx).Errorf("%v", err)
+				common.SetJobError(ctx, err)
+			} else if ctx.Err() != nil {
+				common.Logger(ctx).Errorf("%v", ctx.Err())
+				common.SetJobError(ctx, ctx.Err())
+			}
+			return nil
+		})
 	}
 
 	steps = append(steps, common.JobError)
@@ -411,6 +433,8 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 
 		if !runStep {
 			log.Debugf("Skipping step '%s' due to '%s'", sc.Step.String(), sc.Step.If.Value)
+			rc.StepResults[rc.CurrentStep].Conclusion = model.StepStatusSkipped
+			rc.StepResults[rc.CurrentStep].Outcome = model.StepStatusSkipped
 			return nil
 		}
 
@@ -636,13 +660,6 @@ func applyDefaults(ghc *model.GithubContext, rc *RunContext) *model.GithubContex
 		}
 	}
 
-	_, sha, err := common.FindGitRevision(repoPath)
-	if err != nil {
-		log.Warningf("unable to get git revision: %v", err)
-	} else {
-		ghc.Sha = sha
-	}
-
 	if rc.EventJSON != "" {
 		err = json.Unmarshal([]byte(rc.EventJSON), &ghc.Event)
 		if err != nil {
@@ -650,31 +667,12 @@ func applyDefaults(ghc *model.GithubContext, rc *RunContext) *model.GithubContex
 		}
 	}
 
-	maybeRef := nestedMapLookup(ghc.Event, ghc.EventName, "ref")
-	if maybeRef != nil {
-		log.Debugf("using github ref from event: %s", maybeRef)
-		ghc.Ref = maybeRef.(string)
-	} else {
-		ref, err := common.FindGitRef(repoPath)
-		if err != nil {
-			log.Warningf("unable to get git ref: %v", err)
-		} else {
-			log.Debugf("using github ref: %s", ref)
-			ghc.Ref = ref
-		}
-
-		// set the branch in the event data
-		if rc.Config.DefaultBranch != "" {
-			ghc.Event = withDefaultBranch(rc.Config.DefaultBranch, ghc.Event)
-		} else {
-			ghc.Event = withDefaultBranch("master", ghc.Event)
-		}
-	}
-
 	if ghc.EventName == "pull_request" {
 		ghc.BaseRef = asString(nestedMapLookup(ghc.Event, "pull_request", "base", "ref"))
 		ghc.HeadRef = asString(nestedMapLookup(ghc.Event, "pull_request", "head", "ref"))
 	}
+
+	ghc.SetRefAndSha(rc.Config.DefaultBranch, repoPath)
 
 	return ghc
 }
@@ -729,29 +727,6 @@ func nestedMapLookup(m map[string]interface{}, ks ...string) (rval interface{}) 
 	} else { // 1+ more keys
 		return nestedMapLookup(m, ks[1:]...)
 	}
-}
-
-func withDefaultBranch(b string, event map[string]interface{}) map[string]interface{} {
-	repoI, ok := event["repository"]
-	if !ok {
-		repoI = make(map[string]interface{})
-	}
-
-	repo, ok := repoI.(map[string]interface{})
-	if !ok {
-		log.Warnf("unable to set default branch to %v", b)
-		return event
-	}
-
-	// if the branch is already there return with no changes
-	if _, ok = repo["default_branch"]; ok {
-		return event
-	}
-
-	repo["default_branch"] = b
-	event["repository"] = repo
-
-	return event
 }
 
 func (rc *RunContext) withGithubEnv(env map[string]string) map[string]string {
