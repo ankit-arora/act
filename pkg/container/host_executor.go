@@ -189,15 +189,24 @@ func (e *HostExecutor) Start(attach bool) common.Executor {
 }
 
 type ptyWriter struct {
-	Out      io.Writer
-	AutoStop bool
+	Out       io.Writer
+	AutoStop  bool
+	dirtyLine bool
 }
 
 func (w *ptyWriter) Write(buf []byte) (int, error) {
 	if w.AutoStop && len(buf) > 0 && buf[len(buf)-1] == 4 {
-		n, _ := w.Out.Write(buf[:len(buf)-1])
+		n, err := w.Out.Write(buf[:len(buf)-1])
+		if err != nil {
+			return n, err
+		}
+		if w.dirtyLine || len(buf) > 1 && buf[len(buf)-2] != '\n' {
+			w.Out.Write([]byte("\n"))
+			return n, io.EOF
+		}
 		return n, io.EOF
 	}
+	w.dirtyLine = strings.LastIndex(string(buf), "\n") < len(buf)-1
 	return w.Out.Write(buf)
 }
 
@@ -318,7 +327,7 @@ func (e *HostExecutor) exec2(ctx context.Context, command []string, cmdline stri
 	}
 	if tty != nil {
 		writer.AutoStop = true
-		if _, err := tty.Write([]byte{4}); err != nil {
+		if _, err := tty.Write([]byte("\x04")); err != nil {
 			common.Logger(ctx).Debug("Failed to write EOT")
 		}
 	}
