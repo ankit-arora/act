@@ -176,11 +176,11 @@ func (impl *interperterImpl) evaluateIndexAccess(indexAccessNode *actionlint.Ind
 			}
 			return leftValue.Index(int(rightValue.Int())).Interface(), nil
 		default:
-			return nil, fmt.Errorf("Unable to index on non-slice value: %s", leftValue.Kind())
+			return nil, nil
 		}
 
 	default:
-		return nil, fmt.Errorf("Unknown index type: %s", rightValue.Kind())
+		return nil, nil
 	}
 }
 
