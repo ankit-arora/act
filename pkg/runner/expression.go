@@ -51,9 +51,9 @@ func (rc *RunContext) NewExpressionEvaluator() ExpressionEvaluator {
 		// but required to interpolate/evaluate the step outputs on the job
 		Steps: rc.getStepsContext(),
 		Runner: map[string]interface{}{
-			"os":         "Linux",
-			"temp":       "/tmp",
-			"tool_cache": "/opt/hostedtoolcache",
+			"os":         rc.Env["RUNNER_OS"],
+			"temp":       rc.Env["RUNNER_TEMP"],
+			"tool_cache": rc.Env["RUNNER_TOOL_CACHE"],
 		},
 		Secrets:  secrets,
 		Strategy: strategy,
@@ -102,9 +102,9 @@ func (sc *StepContext) NewExpressionEvaluator() ExpressionEvaluator {
 		Job:    rc.getJobContext(),
 		Steps:  rc.getStepsContext(),
 		Runner: map[string]interface{}{
-			"os":         "Linux",
-			"temp":       "/tmp",
-			"tool_cache": "/opt/hostedtoolcache",
+			"os":         rc.Env["RUNNER_OS"],
+			"temp":       rc.Env["RUNNER_TEMP"],
+			"tool_cache": rc.Env["RUNNER_TOOL_CACHE"],
 		},
 		Secrets:  secrets,
 		Strategy: strategy,
