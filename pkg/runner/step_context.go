@@ -164,13 +164,11 @@ func (sc *StepContext) mergeEnv() map[string]string {
 	}
 
 	if rc.ExtraPath != nil && len(rc.ExtraPath) > 0 {
-		p := env["PATH"]
 		listsep := ":"
 		if isHost {
 			listsep = string(filepath.ListSeparator)
 		}
-		env["PATH"] = strings.Join(rc.ExtraPath, listsep)
-		env["PATH"] += listsep + p
+		env["PATH"] = strings.Join(append(rc.ExtraPath, env["PATH"]), listsep)
 	}
 
 	sc.Env = rc.withGithubEnv(env)
