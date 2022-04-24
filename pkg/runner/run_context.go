@@ -164,6 +164,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			rc.Local = true
 			rc.Env["RUNNER_TOOL_CACHE"] = filepath.Join(rc.GetActPath(), "tool_cache")
 			rc.Env["RUNNER_OS"] = runtime.GOOS
+			rc.Env["RUNNER_ARCH"] = runtime.GOARCH
 			rc.Env["RUNNER_TEMP"] = os.TempDir()
 			for _, env := range os.Environ() {
 				i := strings.Index(env, "=")

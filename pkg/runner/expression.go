@@ -52,6 +52,7 @@ func (rc *RunContext) NewExpressionEvaluator() ExpressionEvaluator {
 		Steps: rc.getStepsContext(),
 		Runner: map[string]interface{}{
 			"os":         rc.Env["RUNNER_OS"],
+			"arch":       rc.Env["RUNNER_ARCH"],
 			"temp":       rc.Env["RUNNER_TEMP"],
 			"tool_cache": rc.Env["RUNNER_TOOL_CACHE"],
 		},
@@ -60,6 +61,13 @@ func (rc *RunContext) NewExpressionEvaluator() ExpressionEvaluator {
 		Matrix:   rc.Matrix,
 		Needs:    using,
 		Inputs:   rc.Inputs,
+	}
+	if ee.Runner["os"] == "" {
+		ee.Runner = map[string]interface{}{
+			"os":         "Linux",
+			"temp":       "/tmp",
+			"tool_cache": "/opt/hostedtoolcache",
+		}
 	}
 	return expressionEvaluator{
 		interpreter: exprparser.NewInterpeter(ee, exprparser.Config{
@@ -103,6 +111,7 @@ func (sc *StepContext) NewExpressionEvaluator() ExpressionEvaluator {
 		Steps:  rc.getStepsContext(),
 		Runner: map[string]interface{}{
 			"os":         rc.Env["RUNNER_OS"],
+			"arch":       rc.Env["RUNNER_ARCH"],
 			"temp":       rc.Env["RUNNER_TEMP"],
 			"tool_cache": rc.Env["RUNNER_TOOL_CACHE"],
 		},
@@ -113,6 +122,13 @@ func (sc *StepContext) NewExpressionEvaluator() ExpressionEvaluator {
 		// todo: should be unavailable
 		// but required to interpolate/evaluate the inputs in actions/composite
 		Inputs: rc.Inputs,
+	}
+	if ee.Runner["os"] == "" {
+		ee.Runner = map[string]interface{}{
+			"os":         "Linux",
+			"temp":       "/tmp",
+			"tool_cache": "/opt/hostedtoolcache",
+		}
 	}
 	return expressionEvaluator{
 		interpreter: exprparser.NewInterpeter(ee, exprparser.Config{
