@@ -162,7 +162,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			}
 			// Tell act to not change the filepath on windows
 			rc.Local = true
-			rc.Env["RUNNER_TOOL_CACHE"] = filepath.Join(rc.GetActPath(), "tool_cache")
+			rc.Env["RUNNER_TOOL_CACHE"] = filepath.Join(cacheDir, "tool_cache")
 			rc.Env["RUNNER_OS"] = runtime.GOOS
 			rc.Env["RUNNER_ARCH"] = runtime.GOARCH
 			rc.Env["RUNNER_TEMP"] = os.TempDir()
