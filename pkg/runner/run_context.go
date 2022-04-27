@@ -151,6 +151,10 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			if err := os.MkdirAll(path, 0777); err != nil {
 				return err
 			}
+			runnerTmp := filepath.Join(miscpath, "tmp")
+			if err := os.MkdirAll(runnerTmp, 0777); err != nil {
+				return err
+			}
 			rc.JobContainer = &container.HostExecutor{Path: path, CleanUp: func() {
 				os.RemoveAll(miscpath)
 			}, StdOut: logWriter}
@@ -165,7 +169,7 @@ func (rc *RunContext) startJobContainer() common.Executor {
 			rc.Env["RUNNER_TOOL_CACHE"] = filepath.Join(cacheDir, "tool_cache")
 			rc.Env["RUNNER_OS"] = runtime.GOOS
 			rc.Env["RUNNER_ARCH"] = runtime.GOARCH
-			rc.Env["RUNNER_TEMP"] = os.TempDir()
+			rc.Env["RUNNER_TEMP"] = runnerTmp
 			for _, env := range os.Environ() {
 				i := strings.Index(env, "=")
 				if i > 0 {
