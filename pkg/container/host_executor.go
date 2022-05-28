@@ -342,7 +342,7 @@ func (e *HostExecutor) exec2(ctx context.Context, command []string, cmdline stri
 
 func (e *HostExecutor) Exec(command []string, cmdline string, env map[string]string, user, workdir string) common.Executor {
 	return func(ctx context.Context) error {
-		if err := e.exec2(ctx, command, cmdline, env, workdir, user); err != nil {
+		if err := e.exec2(ctx, command, cmdline, env, user, workdir); err != nil {
 			select {
 			case <-ctx.Done():
 				return errors.Wrapf(err, "This step was cancelled\n")
