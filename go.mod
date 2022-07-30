@@ -8,6 +8,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20210920160938-87db9fbc61c7 // indirect
 	github.com/andreaskoch/go-fswatch v1.0.0
 	github.com/containerd/continuity v0.2.0 // indirect
+	github.com/creack/pty v1.1.11
 	github.com/docker/cli v20.10.12+incompatible
 	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v20.10.12+incompatible

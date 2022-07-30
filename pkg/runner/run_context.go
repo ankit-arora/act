@@ -291,7 +291,7 @@ func (rc *RunContext) stopJobContainer() common.Executor {
 	return func(ctx context.Context) error {
 		if rc.JobContainer != nil && !rc.Config.ReuseContainers {
 			return rc.JobContainer.Remove().
-				Then(container.NewDockerVolumeRemoveExecutor(rc.jobContainerName()+"-env", false).If(func(ctx context.Context) bool { return !rc.Local }))(ctx)
+				Then(container.NewDockerVolumeRemoveExecutor(rc.jobContainerName(), false).Finally(container.NewDockerVolumeRemoveExecutor(rc.jobContainerName()+"-env", false)).If(func(ctx context.Context) bool { return !rc.Local }))(ctx)
 		}
 		return nil
 	}
