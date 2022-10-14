@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -436,6 +437,21 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 		rc.ExprEval = exprEval
 
 		common.Logger(ctx).Infof("\u2B50  Run %s", sc.Step)
+
+		// Prepare and clean Runner File Commands
+		actPath := rc.GetActPath()
+		outputFileCommand := path.Join("workflow", "outputcmd.txt")
+		stateFileCommand := path.Join("workflow", "statecmd.txt")
+		sc.Env["GITHUB_OUTPUT"] = path.Join(actPath, outputFileCommand)
+		sc.Env["GITHUB_STATE"] = path.Join(actPath, stateFileCommand)
+		_ = rc.JobContainer.Copy(actPath, &container.FileEntry{
+			Name: outputFileCommand,
+			Mode: 0666,
+		}, &container.FileEntry{
+			Name: stateFileCommand,
+			Mode: 0666,
+		})(ctx)
+
 		err = sc.Executor(ctx)(ctx)
 		if err == nil {
 			common.Logger(ctx).Infof("  \u2705  Success - %s", sc.Step)
@@ -450,6 +466,19 @@ func (rc *RunContext) newStepExecutor(step *model.Step) common.Executor {
 			} else {
 				rc.StepResults[rc.CurrentStep].Conclusion = model.StepStatusFailure
 			}
+		}
+		// Process Runner File Commands
+		orgerr := err
+		output := map[string]string{}
+		err = rc.JobContainer.UpdateFromEnv(path.Join(actPath, outputFileCommand), &output)(ctx)
+		if err != nil {
+			return err
+		}
+		for k, v := range output {
+			rc.setOutput(ctx, map[string]string{"name": k}, v)
+		}
+		if orgerr != nil {
+			return orgerr
 		}
 		return err
 	}
