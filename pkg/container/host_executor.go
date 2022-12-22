@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -354,54 +353,8 @@ func (e *HostExecutor) Exec(command []string, cmdline string, env map[string]str
 	}
 }
 
-var _singleLineEnvPattern *regexp.Regexp
-var _mulitiLineEnvPattern *regexp.Regexp
-
 func (e *HostExecutor) UpdateFromEnv(srcPath string, env *map[string]string) common.Executor {
-	if _singleLineEnvPattern == nil {
-		_singleLineEnvPattern = regexp.MustCompile("^([^=]+)=([^=]+)$")
-		_mulitiLineEnvPattern = regexp.MustCompile(`^([^<]+)<<(\w+)$`)
-	}
-
-	localEnv := *env
-	return func(ctx context.Context) error {
-		envTar, err := e.GetContainerArchive(ctx, srcPath)
-		if err != nil {
-			return nil
-		}
-		defer envTar.Close()
-		reader := tar.NewReader(envTar)
-		_, err = reader.Next()
-		if err != nil && err != io.EOF {
-			return errors.WithStack(err)
-		}
-		s := bufio.NewScanner(reader)
-		multiLineEnvKey := ""
-		multiLineEnvDelimiter := ""
-		multiLineEnvContent := ""
-		for s.Scan() {
-			line := s.Text()
-			if singleLineEnv := _singleLineEnvPattern.FindStringSubmatch(line); singleLineEnv != nil {
-				localEnv[singleLineEnv[1]] = singleLineEnv[2]
-			}
-			if line == multiLineEnvDelimiter {
-				localEnv[multiLineEnvKey] = multiLineEnvContent
-				multiLineEnvKey, multiLineEnvDelimiter, multiLineEnvContent = "", "", ""
-			}
-			if multiLineEnvKey != "" && multiLineEnvDelimiter != "" {
-				if multiLineEnvContent != "" {
-					multiLineEnvContent += "\n"
-				}
-				multiLineEnvContent += line
-			}
-			if mulitiLineEnvStart := _mulitiLineEnvPattern.FindStringSubmatch(line); mulitiLineEnvStart != nil {
-				multiLineEnvKey = mulitiLineEnvStart[1]
-				multiLineEnvDelimiter = mulitiLineEnvStart[2]
-			}
-		}
-		env = &localEnv
-		return nil
-	}
+	return parseEnvFile(e, srcPath, env)
 }
 
 func (e *HostExecutor) UpdateFromPath(env *map[string]string) common.Executor {
