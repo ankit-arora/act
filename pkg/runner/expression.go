@@ -56,11 +56,12 @@ func (rc *RunContext) NewExpressionEvaluator() ExpressionEvaluator {
 			"temp":       rc.Env["RUNNER_TEMP"],
 			"tool_cache": rc.Env["RUNNER_TOOL_CACHE"],
 		},
-		Secrets:  secrets,
-		Strategy: strategy,
-		Matrix:   rc.Matrix,
-		Needs:    using,
-		Inputs:   rc.Inputs,
+		Secrets:     secrets,
+		Strategy:    strategy,
+		Matrix:      rc.Matrix,
+		Needs:       using,
+		Inputs:      rc.Inputs,
+		ContextData: rc.ContextData,
 	}
 	if ee.Runner["os"] == "" {
 		ee.Runner = map[string]interface{}{
@@ -121,7 +122,8 @@ func (sc *StepContext) NewExpressionEvaluator() ExpressionEvaluator {
 		Needs:    using,
 		// todo: should be unavailable
 		// but required to interpolate/evaluate the inputs in actions/composite
-		Inputs: rc.Inputs,
+		Inputs:      rc.Inputs,
+		ContextData: rc.ContextData,
 	}
 	if ee.Runner["os"] == "" {
 		ee.Runner = map[string]interface{}{

@@ -50,6 +50,7 @@ type RunContext struct {
 	Composite         *model.Action
 	Inputs            map[string]interface{}
 	Parent            *RunContext
+	ContextData       map[string]interface{}
 }
 
 func (rc *RunContext) Clone() *RunContext {
@@ -59,6 +60,11 @@ func (rc *RunContext) Clone() *RunContext {
 	clone.Inputs = nil
 	clone.StepResults = make(map[string]*model.StepResult)
 	clone.Parent = rc
+	if rc.ContextData != nil {
+		clone.ContextData = map[string]interface{}{
+			"github": rc.ContextData["github"],
+		}
+	}
 	return &clone
 }
 
