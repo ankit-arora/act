@@ -14,9 +14,9 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/ankit-arora/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/runner"
 	"github.com/julienschmidt/httprouter"
-	"github.com/nektos/act/pkg/model"
-	"github.com/nektos/act/pkg/runner"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )

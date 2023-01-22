@@ -17,10 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"github.com/nektos/act/pkg/artifacts"
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/model"
-	"github.com/nektos/act/pkg/runner"
+	"github.com/ankit-arora/act/pkg/artifacts"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/runner"
 )
 
 // Execute is the entry point to running the CLI
@@ -307,8 +307,8 @@ func newRunCommand(ctx context.Context, input *Input) func(*cobra.Command, []str
 func defaultImageSurvey(actrc string) error {
 	var answer string
 	confirmation := &survey.Select{
-		Message: "Please choose the default image you want to use with act:\n\n  - Large size image: +20GB Docker image, includes almost all tools used on GitHub Actions (IMPORTANT: currently only ubuntu-18.04 platform is available)\n  - Medium size image: ~500MB, includes only necessary tools to bootstrap actions and aims to be compatible with all actions\n  - Micro size image: <200MB, contains only NodeJS required to bootstrap actions, doesn't work with all actions\n\nDefault image and other options can be changed manually in ~/.actrc (please refer to https://github.com/nektos/act#configuration for additional information about file structure)",
-		Help:    "If you want to know why act asks you that, please go to https://github.com/nektos/act/issues/107",
+		Message: "Please choose the default image you want to use with act:\n\n  - Large size image: +20GB Docker image, includes almost all tools used on GitHub Actions (IMPORTANT: currently only ubuntu-18.04 platform is available)\n  - Medium size image: ~500MB, includes only necessary tools to bootstrap actions and aims to be compatible with all actions\n  - Micro size image: <200MB, contains only NodeJS required to bootstrap actions, doesn't work with all actions\n\nDefault image and other options can be changed manually in ~/.actrc (please refer to https://github.com/ankit-arora/act#configuration for additional information about file structure)",
+		Help:    "If you want to know why act asks you that, please go to https://github.com/ankit-arora/act/issues/107",
 		Default: "Medium",
 		Options: []string{"Large", "Medium", "Micro"},
 	}

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/model"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"

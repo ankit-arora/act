@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	assert "github.com/stretchr/testify/assert"
 
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 var baseImage = "node:16-buster-slim"
@@ -247,7 +247,7 @@ func TestContainerPath(t *testing.T) {
 		rootDrive := os.Getenv("SystemDrive")
 		rootDriveLetter := strings.ReplaceAll(strings.ToLower(rootDrive), `:`, "")
 		for _, v := range []containerPathJob{
-			{"/mnt/c/Users/act/go/src/github.com/nektos/act", "C:\\Users\\act\\go\\src\\github.com\\nektos\\act\\", ""},
+			{"/mnt/c/Users/act/go/src/github.com/ankit-arora/act", "C:\\Users\\act\\go\\src\\github.com\\nektos\\act\\", ""},
 			{"/mnt/f/work/dir", `F:\work\dir`, ""},
 			{"/mnt/c/windows/to/unix", "windows\\to\\unix", fmt.Sprintf("%s\\", rootDrive)},
 			{fmt.Sprintf("/mnt/%v/act", rootDriveLetter), "act", fmt.Sprintf("%s\\", rootDrive)},
@@ -279,7 +279,7 @@ func TestContainerPath(t *testing.T) {
 			log.Error(err)
 		}
 		for _, v := range []containerPathJob{
-			{"/home/act/go/src/github.com/nektos/act", "/home/act/go/src/github.com/nektos/act", ""},
+			{"/home/act/go/src/github.com/ankit-arora/act", "/home/act/go/src/github.com/ankit-arora/act", ""},
 			{"/home/act", `/home/act/`, ""},
 			{cwd, ".", ""},
 		} {

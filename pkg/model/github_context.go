@@ -3,7 +3,7 @@ package model
 import (
 	"fmt"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 	log "github.com/sirupsen/logrus"
 )
 

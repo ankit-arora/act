@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/nektos/act/pkg/exprparser"
+	"github.com/ankit-arora/act/pkg/exprparser"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )

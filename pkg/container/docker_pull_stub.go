@@ -1,3 +1,4 @@
+//go:build !linux && !darwin && !windows && !openbsd
 // +build !linux,!darwin,!windows,!openbsd
 
 package container
@@ -6,7 +7,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 )
 
 // NewDockerPullExecutorInput the input for the NewDockerPullExecutor function

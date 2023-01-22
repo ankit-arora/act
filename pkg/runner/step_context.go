@@ -17,9 +17,9 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/container"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/container"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 // StepContext contains info about current job
@@ -777,7 +777,7 @@ func newRemoteAction(action string) *remoteAction {
 	}
 }
 
-// https://github.com/nektos/act/issues/228#issuecomment-629709055
+// https://github.com/ankit-arora/act/issues/228#issuecomment-629709055
 // files in .gitignore are not copied in a Docker container
 // this causes issues with actions that ignore other important resources
 // such as `node_modules` for example

@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/nektos/act/cmd"
+	"github.com/ankit-arora/act/cmd"
 )
 
 var version string

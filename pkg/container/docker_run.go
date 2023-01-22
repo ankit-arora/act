@@ -1,3 +1,4 @@
+//go:build linux || darwin || windows || openbsd
 // +build linux darwin windows openbsd
 
 package container
@@ -35,7 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/term"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 )
 
 // NewContainer creates a reference to a container

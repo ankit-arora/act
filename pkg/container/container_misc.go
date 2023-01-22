@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 	"golang.org/x/term"
 )
 

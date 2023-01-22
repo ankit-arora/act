@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 	"github.com/pkg/errors"
 	"golang.org/x/term"
 )

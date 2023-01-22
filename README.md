@@ -1,6 +1,6 @@
-![act-logo](https://github.com/nektos/act/wiki/img/logo-150.png)
+![act-logo](https://github.com/ankit-arora/act/wiki/img/logo-150.png)
 
-# Overview [![push](https://github.com/nektos/act/workflows/push/badge.svg?branch=master&event=push)](https://github.com/nektos/act/actions) [![Join the chat at https://gitter.im/nektos/act](https://badges.gitter.im/nektos/act.svg)](https://gitter.im/nektos/act?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Go Report Card](https://goreportcard.com/badge/github.com/nektos/act)](https://goreportcard.com/report/github.com/nektos/act) [![awesome-runners](https://img.shields.io/badge/listed%20on-awesome--runners-blue.svg)](https://github.com/jonico/awesome-runners)
+# Overview [![push](https://github.com/ankit-arora/act/workflows/push/badge.svg?branch=master&event=push)](https://github.com/ankit-arora/act/actions) [![Join the chat at https://gitter.im/nektos/act](https://badges.gitter.im/nektos/act.svg)](https://gitter.im/nektos/act?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Go Report Card](https://goreportcard.com/badge/github.com/ankit-arora/act)](https://goreportcard.com/report/github.com/ankit-arora/act) [![awesome-runners](https://img.shields.io/badge/listed%20on-awesome--runners-blue.svg)](https://github.com/jonico/awesome-runners)
 
 > "Think globally, `act` locally"
 
@@ -15,7 +15,7 @@ When you run `act` it reads in your GitHub Actions from `.github/workflows/` and
 
 Let's see it in action with a [sample repo](https://github.com/cplee/github-actions-demo)!
 
-![Demo](https://github.com/nektos/act/wiki/quickstart/act-quickstart-2.gif)
+![Demo](https://github.com/ankit-arora/act/wiki/quickstart/act-quickstart-2.gif)
 
 # Installation
 
@@ -29,7 +29,7 @@ If you are using Windows, please follow steps for [installing Docker Desktop on 
 
 If you are using Linux, you will need to [install Docker Engine](https://docs.docker.com/engine/install/).
 
-`act` is currently not supported with `podman` or other container backends (it might work, but it's not guaranteed). Please see [#303](https://github.com/nektos/act/issues/303) for updates.
+`act` is currently not supported with `podman` or other container backends (it might work, but it's not guaranteed). Please see [#303](https://github.com/ankit-arora/act/issues/303) for updates.
 
 ## Installation through package managers
 
@@ -105,19 +105,19 @@ nix-shell -p act
 If you have Go 1.16+, you can install latest released version of `act` directly from source by running:
 
 ```sh
-go install github.com/nektos/act@latest
+go install github.com/ankit-arora/act@latest
 ```
 
 or if you want to install latest unreleased version:
 
 ```sh
-go install github.com/nektos/act@master
+go install github.com/ankit-arora/act@master
 ```
 
 If you want a smaller binary size, run above commands with `-ldflags="-s -w"`
 
 ```sh
-go install -ldflags="-s -w" github.com/nektos/act@...
+go install -ldflags="-s -w" github.com/ankit-arora/act@...
 ```
 
 ## Other install options
@@ -132,7 +132,7 @@ curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
 
 ### Manual download
 
-Download the [latest release](https://github.com/nektos/act/releases/latest) and add the path to your binary into your PATH.
+Download the [latest release](https://github.com/ankit-arora/act/releases/latest) and add the path to your binary into your PATH.
 
 # Example commands
 
@@ -225,7 +225,7 @@ act -s GITHUB_TOKEN=[insert token or leave blank for secure input]
 
 ## `MODULE_NOT_FOUND`
 
-A `MODULE_NOT_FOUND` during `docker cp` command [#228](https://github.com/nektos/act/issues/228) can happen if you are relying on local changes that have not been pushed. This can get triggered if the action is using a path, like:
+A `MODULE_NOT_FOUND` during `docker cp` command [#228](https://github.com/ankit-arora/act/issues/228) can happen if you are relying on local changes that have not been pushed. This can get triggered if the action is using a path, like:
 
 ```yaml
 - name: test action locally
@@ -246,7 +246,7 @@ If the `path:` value doesn't match the name of the repository, a `MODULE_NOT_FOU
 
 ## `docker context` support
 
-The current `docker context` isn't respected ([#583](https://github.com/nektos/act/issues/583)).
+The current `docker context` isn't respected ([#583](https://github.com/ankit-arora/act/issues/583)).
 
 You can work around this by setting `DOCKER_HOST` before running `act`, with e.g:
 
@@ -267,7 +267,7 @@ GitHub Actions offers managed [virtual environments](https://help.github.com/en/
 [micro]: https://hub.docker.com/_/buildpack-deps
 [docker_images]: https://github.com/catthehacker/docker_images
 
-Windows and macOS based platforms are currently **unsupported and won't work** (see issue [#97](https://github.com/nektos/act/issues/97))
+Windows and macOS based platforms are currently **unsupported and won't work** (see issue [#97](https://github.com/ankit-arora/act/issues/97))
 
 ## Please see [IMAGES.md](./IMAGES.md) for more information about the Docker images that can be used with `act`
 
@@ -276,11 +276,11 @@ Windows and macOS based platforms are currently **unsupported and won't work** (
 These default images do **not** contain **all** the tools that GitHub Actions offers by default in their runners.
 Many things can work improperly or not at all while running those image.
 Additionally, some software might still not work even if installed properly, since GitHub Actions are running in fully virtualized machines while `act` is using Docker containers (e.g. Docker does not support running `systemd`).
-In case of any problems [please create issue](https://github.com/nektos/act/issues/new/choose) in respective repository (issues with `act` in this repository, issues with `nektos/act-environments-ubuntu:18.04` in [`nektos/act-environments`](https://github.com/nektos/act-environments) and issues with any image from user `catthehacker` in [`catthehacker/docker_images`](https://github.com/catthehacker/docker_images))
+In case of any problems [please create issue](https://github.com/ankit-arora/act/issues/new/choose) in respective repository (issues with `act` in this repository, issues with `nektos/act-environments-ubuntu:18.04` in [`nektos/act-environments`](https://github.com/ankit-arora/act-environments) and issues with any image from user `catthehacker` in [`catthehacker/docker_images`](https://github.com/catthehacker/docker_images))
 
 ## Alternative runner images
 
-If you need an environment that works just like the corresponding GitHub runner then consider using an image provided by [nektos/act-environments](https://github.com/nektos/act-environments):
+If you need an environment that works just like the corresponding GitHub runner then consider using an image provided by [nektos/act-environments](https://github.com/ankit-arora/act-environments):
 
 - [`nektos/act-environments-ubuntu:18.04`](https://hub.docker.com/r/nektos/act-environments-ubuntu/tags) - built from the Packer file GitHub uses in [actions/virtual-environments](https://github.com/actions/runner).
 

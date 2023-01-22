@@ -1,3 +1,4 @@
+//go:build !linux && !darwin && !windows && !openbsd
 // +build !linux,!darwin,!windows,!openbsd
 
 package container
@@ -8,7 +9,7 @@ import (
 
 	// github.com/docker/docker/builder/dockerignore is deprecated
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 )
 
 // NewDockerBuildExecutorInput the input for the NewDockerBuildExecutor function

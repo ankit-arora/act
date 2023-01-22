@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 func TestStepContextExecutor(t *testing.T) {

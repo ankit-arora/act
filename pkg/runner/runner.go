@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/container"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/container"
+	"github.com/ankit-arora/act/pkg/model"
 	log "github.com/sirupsen/logrus"
 )
 

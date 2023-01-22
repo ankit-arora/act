@@ -61,7 +61,7 @@ Feel free to make a pull request with your image added here
 
 <!-- GitHub repository links -->
 
-[gh/nektos/act-environments]: https://github.com/nektos/act-environments
+[gh/nektos/act-environments]: https://github.com/ankit-arora/act-environments
 [gh/actions/virtual-environments]: https://github.com/actions/virtual-environments
 [gh/catthehacker/docker_images]: https://github.com/catthehacker/docker_images
 [gh/catthehacker/virtual-environments-fork]: https://github.com/catthehacker/virtual-environments-fork

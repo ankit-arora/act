@@ -21,9 +21,9 @@ import (
 
 	selinux "github.com/opencontainers/selinux/go-selinux"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/container"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/container"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 // RunContext contains info about current job

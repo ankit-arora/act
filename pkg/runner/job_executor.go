@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 type jobInfo interface {

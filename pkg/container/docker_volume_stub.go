@@ -1,3 +1,4 @@
+//go:build !linux && !darwin && !windows && !openbsd
 // +build !linux,!darwin,!windows,!openbsd
 
 package container
@@ -5,7 +6,7 @@ package container
 import (
 	"context"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 )
 
 func NewDockerVolumeRemoveExecutor(volume string, force bool) common.Executor {

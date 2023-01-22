@@ -1,3 +1,4 @@
+//go:build linux || darwin || windows || openbsd
 // +build linux darwin windows openbsd
 
 package container
@@ -12,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/nektos/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/common"
 )
 
 // NewDockerPullExecutorInput the input for the NewDockerPullExecutor function

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/model"
 	log "github.com/sirupsen/logrus"
 )
 

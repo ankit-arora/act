@@ -15,7 +15,7 @@ For all support related questions, please ask the question in our gitter room: [
 
 ## <a id="bugs"></a> Found a Bug?
 
-If you've identified a bug in `act`, please [submit an issue](#issue) to our GitHub repo: [nektos/act](https://github.com/nektos/act/issues/new). Please also feel free to submit a [Pull Request](#pr) with a fix for the bug!
+If you've identified a bug in `act`, please [submit an issue](#issue) to our GitHub repo: [nektos/act](https://github.com/ankit-arora/act/issues/new). Please also feel free to submit a [Pull Request](#pr) with a fix for the bug!
 
 ## <a id="features"></a> Have a Feature Request?
 
@@ -31,7 +31,7 @@ Assuming no existing issues exist, please ensure you include required informatio
 
 We may have additional questions and will communicate through the GitHub issue, so please respond back to our questions to help reproduce and resolve the issue as quickly as possible.
 
-New issues can be created with in our [GitHub repo](https://github.com/nektos/act/issues/new).
+New issues can be created with in our [GitHub repo](https://github.com/ankit-arora/act/issues/new).
 
 ### <a id="pr"></a>Pull Requests
 
@@ -52,7 +52,7 @@ When submitting code, please make every effort to follow existing conventions an
 - All dependencies must be defined in the `go.mod` file.
   - Advanced IDEs and code editors (like VSCode) will take care of that, but to be sure, run `go mod tidy` to validate dependencies.
 - For details on the approved style, check out [Effective Go](https://golang.org/doc/effective_go.html).
-- Before running tests, please be aware that they are multi-architecture so for them to not fail, you need to run `docker run --privileged --rm tonistiigi/binfmt --install amd64,arm64` before ([more info available in #765](https://github.com/nektos/act/issues/765)).
+- Before running tests, please be aware that they are multi-architecture so for them to not fail, you need to run `docker run --privileged --rm tonistiigi/binfmt --install amd64,arm64` before ([more info available in #765](https://github.com/ankit-arora/act/issues/765)).
 
 Also, consider the original design principles:
 

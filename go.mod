@@ -1,4 +1,4 @@
-module github.com/nektos/act
+module github.com/ankit-arora/act
 
 go 1.16
 

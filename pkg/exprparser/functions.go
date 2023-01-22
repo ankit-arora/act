@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/model"
 	"github.com/rhysd/actionlint"
 )
 

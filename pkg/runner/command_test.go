@@ -7,8 +7,8 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/nektos/act/pkg/common"
-	"github.com/nektos/act/pkg/model"
+	"github.com/ankit-arora/act/pkg/common"
+	"github.com/ankit-arora/act/pkg/model"
 )
 
 func TestSetEnv(t *testing.T) {

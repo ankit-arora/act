@@ -7,9 +7,9 @@ assignees: ""
 ---
 
 <!--
-    - Make sure you are able to reproduce it on the [latest version](https://github.com/nektos/act/releases)
+    - Make sure you are able to reproduce it on the [latest version](https://github.com/ankit-arora/act/releases)
     - Search the existing issues.
-    - Refer to [README](https://github.com/nektos/act/blob/master/README.md).
+    - Refer to [README](https://github.com/ankit-arora/act/blob/master/README.md).
 -->
 
 ## System information
